@@ -1,21 +1,18 @@
 version: '3.8'
 
 services:
-  version_service:
+  basic_versioning:
     build: ./basic_versioning
-    container_name: version_service
     ports:
-      - "5001:5001"  # Expose version service on port 5001
-    environment:
-      - APP_VERSION=v1.2.3
+      - "5001:5001"
+    env_file:
+      - .env
 
   sensor_api:
     build: ./sensor_api
-    container_name: sensor_api
     ports:
-      - "5000:5000"  # Expose sensor API on port 5000
+      - "5000:5000"
+    env_file:
+      - .env
     depends_on:
-      - version_service  # Ensure version service starts first
-    environment:
-      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
-      - CITY=Delhi
+      - basic_versioning
