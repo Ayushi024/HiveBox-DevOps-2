@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hivebox-sensor-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sensor-api
+  template:
+    metadata:
+      labels:
+        app: sensor-api
+    spec:
+      containers:
+        - name: sensor-api
+          image: ayushi024/hivebox-sensor-api:latest
+          ports:
+            - containerPort: 5000
