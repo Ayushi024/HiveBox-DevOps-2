@@ -1,8 +1,6 @@
-
-Flask @ file:///C:/b/abs_f9w7doyu0h/croot/flask_1716545924884/work
-prometheus-client @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/prometheus_client_1699495496669/work
-python-dotenv @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/python-dotenv_1699475097728/work
-requests @ file:///C:/b/abs_9frifg92q2/croot/requests_1721410901096/work
-requests-file @ file:///Users/ktietz/demo/mc3/conda-bld/requests-file_1629455781986/work
-requests-toolbelt @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/requests-toolbelt_1699475466775/work
-
+Flask
+prometheus-client
+python-dotenv
+requests
+requests-file
+requests-toolbelt
