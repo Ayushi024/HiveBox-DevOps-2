@@ -84,7 +84,10 @@ def get_temperature():
     if not OPENWEATHER_API_KEY:
         return jsonify({"error": "API key is missing!"}), 500
 
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={OPENWEATHER_API_KEY}&units=metric"
+    url = (
+        f"https://api.openweathermap.org/data/2.5/weather?"
+        f"q={CITY}&appid={OPENWEATHER_API_KEY}&units=metric"
+    )
 
     try:
         response = requests.get(url, timeout=5)  # Added timeout to prevent long hangs
