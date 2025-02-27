@@ -1,3 +1,2 @@
 
-python-dotenv @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/python-dotenv_1699475097728/work
-
+python-dotenv

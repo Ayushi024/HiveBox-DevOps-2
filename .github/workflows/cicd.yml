@@ -17,40 +17,71 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install -r sensor_api/requirements.txt
+          pip install flake8 pytest
 
       - name: Lint with flake8
         run: flake8 sensor_api --max-line-length=100
 
-      - name: Run unit tests
-        run: pytest sensor_api
+      - name: Start the API (Run in Background)
+        run: |
+          python sensor_api/app.py & 
+          sleep 5  # Wait for the app to start
 
-  docker-build:
+      - name: Run unit tests
+        run: |
+          pytest sensor_api/tests --maxfail=5 --disable-warnings -q
+
+      # Add OpenWeather API connectivity test
+      - name: Test network connectivity to OpenWeather API
+        run: |
+          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=${{ secrets.OPENWEATHER_API_KEY }}"
+
+  security-check:
     runs-on: ubuntu-latest
-    needs: lint-test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v3
+        with:
+          results_file: results.json
+          results_format: json
+
+      - name: Upload Scorecard results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.json
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [lint-test, security-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker image
         run: |
-          docker build -t ghcr.io/ayushi024/hivebox-sensor-api:latest -f sensor_api/Dockerfile .
-          docker push ghcr.io/ayushi024/hivebox-sensor-api:latest
+          IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
+          docker build -t $IMAGE_TAG -f ./sensor_api/Dockerfile .
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
   deploy-staging:
     runs-on: ubuntu-latest
     needs: docker-build
-    environment: staging  # Staging Environment
+    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,12 +105,23 @@ jobs:
 
       - name: Restart deployment to pull latest image
         run: |
+          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
+
+      - name: Test the deployment in Staging
+        run: |
+          # Add commands to test staging deployment, e.g., curl API or health checks
+          curl -f http://localhost:5000/temperature || exit 1
+          curl -f http://localhost:5001/version || exit 1
+
+      - name: Delete KIND Cluster
+        if: always()
+        run: kind delete cluster --name hivebox
 
   deploy-production:
     runs-on: ubuntu-latest
     needs: docker-build
-    environment: production  # Production Environment
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,4 +145,15 @@ jobs:
 
       - name: Restart deployment to pull latest image
         run: |
+          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
+
+      - name: Test the deployment in Production
+        run: |
+          # Add commands to test production deployment, e.g., curl API or health checks
+          curl -f http://localhost:5000/temperature || exit 1
+          curl -f http://localhost:5001/version || exit 1
+
+      - name: Delete KIND Cluster
+        if: always()
+        run: kind delete cluster --name hivebox
