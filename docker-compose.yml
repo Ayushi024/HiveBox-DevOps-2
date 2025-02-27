@@ -7,6 +7,14 @@ services:
       - "5001:5001"
     env_file:
       - .env
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/version"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
 
   sensor_api:
     build: ./sensor_api
@@ -16,3 +24,12 @@ services:
       - .env
     depends_on:
       - basic_versioning
+    networks:
+      - app-network
+    environment:
+      - VERSION_BASE_URL=http://basic_versioning:5001
+      - TEMPERATURE_BASE_URL=http://sensor_api:5000
+
+networks:
+  app-network:
+    driver: bridge

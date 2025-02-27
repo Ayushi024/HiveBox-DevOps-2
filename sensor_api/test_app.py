@@ -1,12 +1,5 @@
-"""
-Unit tests for the Sensor API.
-
-This script contains tests for:
-- The `/version` endpoint to check if it returns the expected version.
-- The `/temperature` endpoint to validate API responses.
-"""
-
 import unittest
+from unittest.mock import patch
 from sensor_api.app import app
 
 
@@ -26,14 +19,53 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("version", response.json)
 
-    def test_temperature_endpoint(self):
+    @patch('sensor_api.app.requests.get')
+    def test_temperature_endpoint(self, mock_get):
         """
-        Test if the /temperature endpoint returns an expected status code.
+        Test if the /temperature endpoint returns an expected status code
+        and correct temperature status.
+        """
 
-        The status code depends on external API responses.
-        """
+        # Mock successful API response with temp = 15 (Good status)
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = {
+            "main": {"temp": 15}
+        }
+
         response = self.client.get("/temperature")
-        self.assertIn(response.status_code, [200, 404, 500])  # API-dependent
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("temperature_celsius", response.json)
+        self.assertEqual(response.json["status"], "Good")
+
+        # Mock successful API response with temp = 5 (Too Cold status)
+        mock_get.return_value.json.return_value = {
+            "main": {"temp": 5}
+        }
+
+        response = self.client.get("/temperature")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["status"], "Too Cold")
+
+        # Mock successful API response with temp = 40 (Too Hot status)
+        mock_get.return_value.json.return_value = {
+            "main": {"temp": 40}
+        }
+
+        response = self.client.get("/temperature")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["status"], "Too Hot")
+
+        # Test for failed API response (e.g., 500)
+        mock_get.return_value.status_code = 500
+        response = self.client.get("/temperature")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("error", response.json)
+
+        # Test for missing API key (simulate absence of OPENWEATHER_API_KEY)
+        app.config['OPENWEATHER_API_KEY'] = None
+        response = self.client.get("/temperature")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("error", response.json)
 
 
 if __name__ == "__main__":

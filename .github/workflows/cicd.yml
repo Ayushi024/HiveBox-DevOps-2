@@ -25,18 +25,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r sensor_api/requirements.txt
-          pip install flake8 pytest  # Ensure both are installed
+          pip install flake8 pytest
 
       - name: Lint with flake8
         run: flake8 sensor_api --max-line-length=100
 
+      - name: Start the API (Run in Background)
+        run: |
+          python sensor_api/app.py & 
+          sleep 5  # Wait for the app to start
+
       - name: Run unit tests
         run: |
-          if ls sensor_api/test_*.py 1> /dev/null 2>&1; then
-            pytest sensor_api
-          else
-            echo "No test files found, skipping pytest."
-          fi
+          pytest sensor_api/tests --maxfail=5 --disable-warnings -q
 
   security-check:
     runs-on: ubuntu-latest
@@ -102,6 +103,12 @@ jobs:
           kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
 
+      - name: Test the deployment in Staging
+        run: |
+          # Add commands to test staging deployment, e.g., curl API or health checks
+          curl -f http://localhost:5000/temperature || exit 1
+          curl -f http://localhost:5001/version || exit 1
+
       - name: Delete KIND Cluster
         if: always()
         run: kind delete cluster --name hivebox
@@ -135,6 +142,12 @@ jobs:
         run: |
           kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
+
+      - name: Test the deployment in Production
+        run: |
+          # Add commands to test production deployment, e.g., curl API or health checks
+          curl -f http://localhost:5000/temperature || exit 1
+          curl -f http://localhost:5001/version || exit 1
 
       - name: Delete KIND Cluster
         if: always()

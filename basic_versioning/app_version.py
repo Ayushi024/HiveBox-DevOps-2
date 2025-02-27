@@ -17,7 +17,9 @@ def home():
 def get_version():
     """Returns the application version from an environment variable."""
     version = os.getenv("APP_VERSION", "v0.0.1")  # Default version if not set
-    return jsonify({"version": version})
+    return jsonify({"version": version}), 200  # Explicit 200 status code
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    # Set debug mode from environment variable (default to False if not set)
+    debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ["true", "1", "t"]
+    app.run(host="0.0.0.0", port=5001, debug=debug_mode)

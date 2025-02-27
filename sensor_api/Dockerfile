@@ -11,11 +11,18 @@ WORKDIR /app
 COPY sensor_api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Clean up the requirements.txt to reduce image size
+RUN rm requirements.txt
+
+# Create a non-root user to run the application
+RUN adduser --disabled-password myuser
+USER myuser
+
+# Copy application files (after installing dependencies to leverage Docker cache)
 COPY . .
 
 # Expose port 5000 for Flask
 EXPOSE 5000
 
 # Run the application
-CMD ["python", "sensor_api/app.py"]
+ENTRYPOINT ["python", "sensor_api/app.py"]
