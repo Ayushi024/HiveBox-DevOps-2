@@ -77,7 +77,7 @@ jobs:
 
     environment: staging
 
-    environment: staging  # Staging Environment
+    environment: staging 
 
     steps:
       - name: Checkout code
