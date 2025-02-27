@@ -32,9 +32,26 @@ jobs:
       - name: Run unit tests
         run: pytest sensor_api
 
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2
+        with:
+          results_file: results.json
+          results_format: json
+
+      - name: Upload Scorecard results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.json
+
   docker-build:
     runs-on: ubuntu-latest
-    needs: lint-test
+    needs: [lint-test, security-check]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,13 +61,15 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ghcr.io/ayushi024/hivebox-sensor-api:latest -f sensor_api/Dockerfile .
-          docker push ghcr.io/ayushi024/hivebox-sensor-api:latest
+          IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
+          docker build -t $IMAGE_TAG -f sensor_api/Dockerfile .
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
   deploy-staging:
     runs-on: ubuntu-latest
     needs: docker-build
-    environment: staging  # Staging Environment
+    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,12 +93,17 @@ jobs:
 
       - name: Restart deployment to pull latest image
         run: |
+          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
+
+      - name: Delete KIND Cluster
+        if: always()
+        run: kind delete cluster --name hivebox
 
   deploy-production:
     runs-on: ubuntu-latest
     needs: docker-build
-    environment: production  # Production Environment
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,4 +127,9 @@ jobs:
 
       - name: Restart deployment to pull latest image
         run: |
+          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
+
+      - name: Delete KIND Cluster
+        if: always()
+        run: kind delete cluster --name hivebox

@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hivebox-sensor-api
+  labels:
+    app: sensor-api
 spec:
   replicas: 2
   selector:
@@ -14,6 +16,36 @@ spec:
     spec:
       containers:
         - name: sensor-api
-          image: ayushi024/hivebox-sensor-api:latest
+          image: ghcr.io/ayushi024/hivebox-sensor-api:latest  # Updated dynamically in CI/CD
           ports:
             - containerPort: 5000
+          env:
+            - name: OPENWEATHER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openweather-secret
+                  key: API_KEY
+            - name: SENSEBOX_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: sensor-config
+                  key: SENSEBOX_ID
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
