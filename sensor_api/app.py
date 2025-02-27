@@ -22,13 +22,17 @@ sys.path.append(BASE_DIR)
 try:
     from basic_versioning.app_version import get_version
 except ModuleNotFoundError:
-    raise ImportError("⚠️ Could not import 'basic_versioning'. Check your project structure.")
+    raise ImportError(
+        "⚠️ Could not import 'basic_versioning'. Check your project structure."
+    )
 
 # Load environment variables from .env (for local development)
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 app = Flask(__name__)
 
@@ -42,17 +46,24 @@ if not os.getenv("CITY"):
 # Prometheus metrics
 REQUEST_COUNT = Counter("api_requests_total", "Total API requests")
 
+
 @app.route("/", methods=["GET"])
 def home():
     """Default route to guide users."""
-    return jsonify({
-        "message": "Welcome to the Sensor API!",
-        "instructions": {
-            "Get Version": "Visit /version",
-            "Get Temperature": "Visit /temperature",
-            "Get Metrics": "Visit /metrics"
-        }
-    }), 200
+    return (
+        jsonify(
+            {
+                "message": "Welcome to the Sensor API!",
+                "instructions": {
+                    "Get Version": "Visit /version",
+                    "Get Temperature": "Visit /temperature",
+                    "Get Metrics": "Visit /metrics",
+                },
+            }
+        ),
+        200,
+    )
+
 
 @app.route("/version", methods=["GET"])
 def get_version_endpoint():
@@ -64,6 +75,7 @@ def get_version_endpoint():
         logging.error(f"Error fetching version: {str(e)}")
         return jsonify({"error": "Failed to fetch version"}), 500
 
+
 @app.route("/temperature", methods=["GET"])
 def get_temperature():
     """Fetches the latest temperature data from OpenWeather API."""
@@ -73,7 +85,7 @@ def get_temperature():
         return jsonify({"error": "API key is missing!"}), 500
 
     url = f"https://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={OPENWEATHER_API_KEY}&units=metric"
-    
+
     try:
         response = requests.get(url, timeout=5)  # Added timeout to prevent long hangs
         response.raise_for_status()  # Raise error for HTTP issues
@@ -90,10 +102,12 @@ def get_temperature():
         logging.error(f"Error fetching temperature data: {str(e)}")
         return jsonify({"error": "Failed to fetch temperature", "details": str(e)}), 500
 
+
 @app.route("/metrics", methods=["GET"])
 def metrics():
     """Returns Prometheus metrics."""
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
 
 if __name__ == "__main__":
     logging.info("Starting Sensor API on port 5000...")
