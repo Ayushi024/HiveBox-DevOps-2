@@ -39,6 +39,11 @@ jobs:
         run: |
           pytest sensor_api/tests --maxfail=5 --disable-warnings -q
 
+      # Add OpenWeather API connectivity test
+      - name: Test network connectivity to OpenWeather API
+        run: |
+          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=${{ secrets.OPENWEATHER_API_KEY }}"
+
   security-check:
     runs-on: ubuntu-latest
     steps:
