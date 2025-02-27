@@ -1,18 +1,15 @@
-"""
-This module contains the routes for the Sensor API, including:
-- /version: Returns the version of the application.
-- /temperature: Fetches temperature data from the OpenWeather API.
-- /metrics: Exposes Prometheus metrics for monitoring.
-"""
-
 import os
 import logging
-import requests 
+import requests
 from flask import Flask, jsonify
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter
 
-app = Flask(__name__)
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+# Create Flask app
+app = Flask(__name__)
 # Environment variables and Prometheus metrics
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 CITY = os.getenv("CITY", "Delhi")
@@ -24,7 +21,9 @@ def get_temperature():
     """Fetches the latest temperature data from OpenWeather API."""
     REQUEST_COUNT.inc()  # Increment API request counter
 
+    # Check if API key is missing
     if not OPENWEATHER_API_KEY:
+        logger.error("API key is missing.")
         return jsonify({"error": "API key is missing!"}), 500
 
     url = (
@@ -42,11 +41,15 @@ def get_temperature():
         # Determine status based on temperature
         status = "Too Cold" if temp < 10 else "Good" if temp <= 36 else "Too Hot"
 
+        logger.info(f"Temperature fetched successfully: {temp}°C, Status: {status}")
         return jsonify({"temperature_celsius": temp, "status": status}), 200
 
     except requests.exceptions.Timeout:
-        logging.error(f"Timeout occurred while fetching temperature data.")
+        logger.error(f"Timeout occurred while fetching temperature data.")
         return jsonify({"error": "Request timed out"}), 504
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching temperature data: {str(e)}")
+        logger.error(f"Error fetching temperature data: {str(e)}")
         return jsonify({"error": "Failed to fetch temperature", "details": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
