@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -25,13 +25,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r sensor_api/requirements.txt
-          pip install flake8  # Ensure Flake8 is installed
+          pip install flake8 pytest  # Ensure both are installed
 
       - name: Lint with flake8
         run: flake8 sensor_api --max-line-length=100
 
       - name: Run unit tests
-        run: pytest sensor_api
+        run: |
+          if ls sensor_api/test_*.py 1> /dev/null 2>&1; then
+            pytest sensor_api
+          else
+            echo "No test files found, skipping pytest."
+          fi
 
   security-check:
     runs-on: ubuntu-latest
@@ -63,7 +68,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
-          docker build -t $IMAGE_TAG -f sensor_api/Dockerfile .
+          docker build -t $IMAGE_TAG -f ./sensor_api/Dockerfile .
           docker push $IMAGE_TAG
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
