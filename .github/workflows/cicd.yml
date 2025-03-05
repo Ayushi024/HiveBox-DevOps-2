@@ -62,39 +62,72 @@ jobs:
           docker run --rm \
             -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
+          - name: Convert Scorecard JSON results to SARIF format
+    run: |
+        jq '{
+          "version": "2.1.0",
+          "runs": [{
+            "tool": {
+              "driver": {
+                "name": "OpenSSF Scorecard",
+                "version": "v3.2.1"
+              }
+            },
+            "results": [
+              .[] | {
+                "ruleId": .name,
+                "message": {
+                  "text": .description
+                },
+                "locations": [{
+                  "physicalLocation": {
+                    "artifactLocation": {
+                      "uri": "https://github.com/${{ github.repository }}"
+                    },
+                    "region": {
+                      "startLine": 1,  # Adjust this according to actual data if available
+                      "startColumn": 1  # Adjust this according to actual data if available
+                    }
+                  }
+                }]
+              }
+            ]
+          }]
+        }' results.json > cleaned_results.json
+ 
+      
+        - name: Display results.json content
+          run: cat results.json  
 
-      - name: Display results.json content
-        run: cat results.json  
+        - name: Upload Scorecard results
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: results.json
 
-      - name: Upload Scorecard results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: results.json
+        - name: Run Semgrep security scan
+          run: |
+           pip install semgrep
+           semgrep scan --config=auto . --json > semgrep_results.json
 
-      - name: Run Semgrep security scan
-        run: |
-          pip install semgrep
-          semgrep scan --config=auto . --json > semgrep_results.json
+        - name: Upload Semgrep results to SARIF
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: semgrep_results.json
 
-      - name: Upload Semgrep results to SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep_results.json
+        - name: Run Terrascan on Kubernetes manifests
+          run: |
+            curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan-linux-amd64 -o terrascan
+            chmod +x terrascan
+            sudo mv terrascan /usr/local/bin/
+            terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
 
-      - name: Run Terrascan on Kubernetes manifests
-        run: |
-          curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan-linux-amd64 -o terrascan
-          chmod +x terrascan
-          sudo mv terrascan /usr/local/bin/
-          terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
+        - name: Display results.json content
+          run: cat results.json  
 
-      - name: Display results.json content
-        run: cat results.json  
-
-      - name: Upload Terrascan results to SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: terrascan_results.json
+        - name: Upload Terrascan results to SARIF
+          uses: github/codeql-action/upload-sarif@v3
+          with:
+            sarif_file: terrascan_results.json
 
   docker-build:
     runs-on: ubuntu-latest
