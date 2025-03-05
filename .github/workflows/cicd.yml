@@ -76,7 +76,7 @@ jobs:
               },
               "results": [
                 .[] | {
-                  "ruleId": .name,
+                  "ruleId": .rule_id,
                   "message": {
                     "text": .description
                   },
