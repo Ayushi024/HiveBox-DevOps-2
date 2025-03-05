@@ -65,7 +65,7 @@ security-check:
           gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
 
     - name: Upload Scorecard results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: results.json
 
@@ -75,7 +75,7 @@ security-check:
         semgrep scan --config=auto . --json > semgrep_results.json
 
     - name: Upload Semgrep results to SARIF
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: semgrep_results.json
 
@@ -87,7 +87,7 @@ security-check:
         terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
 
     - name: Upload Terrascan results to SARIF
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: terrascan_results.json
 
