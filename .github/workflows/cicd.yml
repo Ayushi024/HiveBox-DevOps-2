@@ -102,7 +102,9 @@ jobs:
           }' results.json > cleaned_results.json
 
       
-
+      - name: Display cleaned_results.json
+        run: cat cleaned_results.json
+        
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v3
         with:
