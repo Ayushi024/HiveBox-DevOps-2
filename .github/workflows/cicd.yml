@@ -50,35 +50,50 @@ jobs:
         run: |
           echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
-
-  security-check:
+jobs:
+  scorecard-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run OpenSSF Scorecard
-        uses: ossf/scorecard-action@v3
-        with:
-          results_file: results.json
-          results_format: json
+      - name: Run OpenSSF Scorecard using Docker
+        run: |
+          docker pull gcr.io/openssf/scorecard:v3.2.1
+          docker run --rm gcr.io/openssf/scorecard:v3.2.1 > results.json
+        # This will save the output to 'results.json' to upload later
 
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.json
+        # Ensure that the 'results.json' from the previous step is correctly uploaded
 
       - name: Run Semgrep security scan
         run: |
           pip install semgrep
-          semgrep scan --config=auto .
+          semgrep scan --config=auto . --json > semgrep_results.json
+        # Ensure the results are output in JSON format for further processing
+
+      - name: Upload Semgrep results to SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep_results.json
+        # Upload Semgrep results
 
       - name: Run Terrascan on Kubernetes manifests
         run: |
           curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan-linux-amd64 -o terrascan
           chmod +x terrascan
           sudo mv terrascan /usr/local/bin/
-          terrascan scan -t k8s -d kubernetes/
+          terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
+        # Output Terrascan results to a file
+
+      - name: Upload Terrascan results to SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: terrascan_results.json
+        # Upload Terrascan results
 
   docker-build:
     runs-on: ubuntu-latest
