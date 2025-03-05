@@ -62,7 +62,8 @@ jobs:
         docker pull gcr.io/openssf/scorecard:v3.2.1
         docker run --rm \
         -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-        gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --output results.json
+        gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
+
 
 
 
