@@ -58,11 +58,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run OpenSSF Scorecard using Docker
-      run: |
-         docker pull gcr.io/openssf/scorecard:v3.2.1
-          docker run --rm gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
-
-
+        run: |
+          docker pull gcr.io/openssf/scorecard:v3.2.1
+          docker run --rm \
+            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+            gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
+        
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v2
         with:
