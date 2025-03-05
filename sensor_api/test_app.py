@@ -7,7 +7,8 @@ class TestSensorAPI(unittest.TestCase):
     """Test cases for the Flask application."""
 
     def setUp(self):
-        """Set up a test client before each test."""
+        from sensor_api.app import app
+
         self.client = app.test_client()
 
     def test_version_endpoint(self):
