@@ -65,6 +65,9 @@ jobs:
       
       - name: Display results.json content
         run: cat results.json
+      - name: Check the current directory
+        run: |
+          echo "Current working directory: $(pwd)"
 
       - name: Convert Scorecard JSON results to SARIF format
         run: |
