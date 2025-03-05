@@ -60,7 +60,7 @@ jobs:
       - name: Run OpenSSF Scorecard using Docker
         run: |
           docker pull gcr.io/openssf/scorecard:v3.2.1
-          docker run --rm gcr.io/openssf/scorecard:v3.2.1 > results.json
+          docker run --rm gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
         # This will save the output to 'results.json' to upload later
 
       - name: Upload Scorecard results
