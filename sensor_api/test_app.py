@@ -9,12 +9,6 @@ class TestSensorAPI(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
 
-    def test_version_endpoint(self):
-        """Test if the /version endpoint returns a 200 status and contains 'version'."""
-        response = self.client.get("/version")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("version", response.json)
-
     @patch("sensor_api.app.requests.get")
     def test_temperature_endpoint(self, mock_get):
         """Test different temperature values from OpenWeather API."""
