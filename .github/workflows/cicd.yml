@@ -51,9 +51,9 @@ jobs:
           echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
-security-check:
-  runs-on: ubuntu-latest
-  steps:
+  security-check:
+    runs-on: ubuntu-latest
+    steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
