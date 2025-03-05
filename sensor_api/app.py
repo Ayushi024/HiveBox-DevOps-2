@@ -5,38 +5,32 @@ from flask import Flask, jsonify
 app = Flask(__name__)
 
 
-@app.route("/version")
-def version():
-    """Returns the application version."""
-    return jsonify({"version": "1.0.0"})
-
-
 @app.route("/temperature")
 def temperature():
     """Fetches temperature from OpenWeather API and determines status."""
     api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not api_key:
-        return (
-            jsonify({"error": "API key missing"}),
-            500,
-        )  # ✅ Ensures API key is required
+        return jsonify({"error": "API key missing"}), 500  # ✅ Explicitly return 500
 
     try:
         response = requests.get(
             f"http://api.openweathermap.org/data/2.5/weather?q=London&appid={api_key}&units=metric"
         )
+
+        if response.status_code != 200:
+            return (
+                jsonify({"error": "Failed to fetch data"}),
+                500,
+            )  # ✅ Handle API failures
+
         data = response.json()
 
-        if (
-            response.status_code != 200
-            or "main" not in data
-            or "temp" not in data["main"]
-        ):
+        if "main" not in data or "temp" not in data["main"]:
             return (
                 jsonify({"error": "Invalid API response"}),
                 500,
-            )  # ✅ Handles bad responses
+            )  # ✅ Ensure correct response structure
 
         temp = data["main"]["temp"]
         status = "Good" if 10 <= temp <= 30 else "Too Cold" if temp < 10 else "Too Hot"
