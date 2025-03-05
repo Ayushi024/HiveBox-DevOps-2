@@ -60,10 +60,16 @@ jobs:
       - name: Run OpenSSF Scorecard using Docker
         run: |
           docker pull gcr.io/openssf/scorecard:v3.2.1
+<<<<<<< HEAD
           docker run --rm \
             -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
         
+=======
+          docker run --rm gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
+        # This will save the output to 'results.json' to upload later
+
+>>>>>>> 9fb3d46b80405619f3a13805e604715b6f6e1a31
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v2
         with:
