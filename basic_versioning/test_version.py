@@ -2,20 +2,20 @@ import os
 import pytest
 from basic_versioning.app_version import app
 
+# Set environment variable before app loads
+os.environ["APP_VERSION"] = "v1.2.3"
+
 
 @pytest.fixture
 def client():
-    """Fixture for Flask test client."""
+    """Fixture for Flask test client with app context."""
     with app.test_client() as client:
-        yield client
+        with app.app_context():  # Ensure Flask app context is active
+            yield client
 
 
 def test_version(client):
     """Test that /version endpoint returns the correct version in JSON format."""
-    # Set the environment variable for testing
-    os.environ["APP_VERSION"] = "v1.2.3"
-
-    # Send a GET request to the /version endpoint
     response = client.get("/version")
 
     # Check that the response status code is 200

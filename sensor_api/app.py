@@ -1,63 +1,28 @@
-import os
-import logging
-import requests
+"""Flask application for handling sensor data."""
+
 from flask import Flask, jsonify
-from prometheus_client import Counter  # Import the missing Counter class
+import requests
+import os
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Create Flask app
 app = Flask(__name__)
 
-# Environment variables and Prometheus metrics
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
-CITY = os.getenv("CITY", "Delhi")
+@app.route("/version")
+def version():
+    """Return API version."""
+    return jsonify({"version": "1.0.0"})
 
-REQUEST_COUNT = Counter("api_requests_total", "Total API requests")
+@app.route("/temperature")
+def temperature():
+    """Fetch temperature data from OpenWeather API and return temperature status."""
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    if not api_key:
+        return jsonify({"error": "Missing API key"}), 500
 
+    response = requests.get(f"https://api.openweathermap.org/data/2.5/weather?q=London&appid={api_key}&units=metric")
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to fetch temperature"}), 500
 
-@app.route("/temperature", methods=["GET"])
-def get_temperature():
-    """Fetches the latest temperature data from OpenWeather API."""
-    REQUEST_COUNT.inc()  # Increment API request counter
+    temp = response.json()["main"]["temp"]
+    status = "Good" if 10 <= temp <= 30 else "Too Hot" if temp > 30 else "Too Cold"
 
-    # Check if API key is missing
-    if not OPENWEATHER_API_KEY:
-        logger.error("API key is missing.")
-        return jsonify({"error": "API key is missing!"}), 500
-
-    url = (
-        f"https://api.openweathermap.org/data/2.5/weather?"
-        f"q={CITY}&appid={OPENWEATHER_API_KEY}&units=metric"
-    )
-
-    try:
-        response = requests.get(url, timeout=5)  # Timeout to avoid long hanging
-        response.raise_for_status()  # Raises HTTPError for bad responses
-
-        data = response.json()
-        temp = data["main"]["temp"]
-
-        # Determine status based on temperature
-        if temp < 10:
-            status = "Too Cold"
-        elif temp <= 36:
-            status = "Good"
-        else:
-            status = "Too Hot"
-
-        logger.info(f"Temperature fetched successfully: {temp}°C, Status: {status}")
-        return jsonify({"temperature_celsius": temp, "status": status}), 200
-
-    except requests.exceptions.Timeout:
-        logger.error("Timeout occurred while fetching temperature data.")
-        return jsonify({"error": "Request timed out"}), 504
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error fetching temperature data: {str(e)}")
-        return jsonify({"error": "Failed to fetch temperature", "details": str(e)}), 500
-
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    return jsonify({"temperature_celsius": temp, "status": status})
