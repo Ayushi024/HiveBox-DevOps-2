@@ -87,7 +87,7 @@ jobs:
                     "locations": [{
                       "physicalLocation": {
                         "artifactLocation": {
-                          "uri": "https://github.com/Ayushi024/HiveBox-DevOps-2"
+                          "uri": "file://$(pwd)/"
                         },
                         "region": {
                           "startLine": 1,
