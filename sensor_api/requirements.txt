@@ -4,3 +4,4 @@ python-dotenv
 requests
 requests-file
 requests-toolbelt
+pytest

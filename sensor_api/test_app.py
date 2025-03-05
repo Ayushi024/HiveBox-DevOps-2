@@ -19,7 +19,7 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("version", response.json)
 
-    @patch('sensor_api.app.requests.get')
+    @patch("sensor_api.app.requests.get")
     def test_temperature_endpoint(self, mock_get):
         """
         Test if the /temperature endpoint returns an expected status code
@@ -28,9 +28,7 @@ class TestSensorAPI(unittest.TestCase):
 
         # Mock successful API response with temp = 15 (Good status)
         mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = {
-            "main": {"temp": 15}
-        }
+        mock_get.return_value.json.return_value = {"main": {"temp": 15}}
 
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
@@ -38,18 +36,14 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.json["status"], "Good")
 
         # Mock successful API response with temp = 5 (Too Cold status)
-        mock_get.return_value.json.return_value = {
-            "main": {"temp": 5}
-        }
+        mock_get.return_value.json.return_value = {"main": {"temp": 5}}
 
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["status"], "Too Cold")
 
         # Mock successful API response with temp = 40 (Too Hot status)
-        mock_get.return_value.json.return_value = {
-            "main": {"temp": 40}
-        }
+        mock_get.return_value.json.return_value = {"main": {"temp": 40}}
 
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
@@ -62,7 +56,7 @@ class TestSensorAPI(unittest.TestCase):
         self.assertIn("error", response.json)
 
         # Test for missing API key (simulate absence of OPENWEATHER_API_KEY)
-        app.config['OPENWEATHER_API_KEY'] = None
+        app.config["OPENWEATHER_API_KEY"] = None
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 500)
         self.assertIn("error", response.json)

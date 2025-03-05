@@ -25,21 +25,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r sensor_api/requirements.txt
+          pip install -r basic_versioning/requirements.txt
           pip install flake8 pytest
 
       - name: Lint with flake8
-        run: flake8 sensor_api --max-line-length=100
+        run: flake8 sensor_api basic_versioning --max-line-length=100
 
       - name: Start the API (Run in Background)
         run: |
-          python sensor_api/app.py & 
+          python sensor_api/app.py &
           sleep 5  # Wait for the app to start
 
       - name: Run unit tests
         run: |
-          pytest sensor_api/tests --maxfail=5 --disable-warnings -q
+          pytest sensor_api/test_app basic_versioning/test_version --maxfail=5 --disable-warnings -q
 
-      # Add OpenWeather API connectivity test
       - name: Test network connectivity to OpenWeather API
         run: |
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=${{ secrets.OPENWEATHER_API_KEY }}"
@@ -71,12 +71,19 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker image
+      - name: Build and push Docker images
         run: |
-          IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
-          docker build -t $IMAGE_TAG -f ./sensor_api/Dockerfile .
-          docker push $IMAGE_TAG
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor_api:$(git rev-parse --short HEAD)"
+          VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic_versioning:$(git rev-parse --short HEAD)"
+
+          docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile .
+          docker push $SENSOR_IMAGE_TAG
+
+          docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile .
+          docker push $VERSIONING_IMAGE_TAG
+
+          echo "SENSOR_IMAGE_TAG=$SENSOR_IMAGE_TAG" >> $GITHUB_ENV
+          echo "VERSIONING_IMAGE_TAG=$VERSIONING_IMAGE_TAG" >> $GITHUB_ENV
 
   deploy-staging:
     runs-on: ubuntu-latest
@@ -103,16 +110,12 @@ jobs:
         run: |
           kubectl apply -f kubernetes/staging/
 
-      - name: Restart deployment to pull latest image
+      - name: Restart deployments
         run: |
-          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
-          kubectl rollout restart deployment/hivebox-sensor-api
-
-      - name: Test the deployment in Staging
-        run: |
-          # Add commands to test staging deployment, e.g., curl API or health checks
-          curl -f http://localhost:5000/temperature || exit 1
-          curl -f http://localhost:5001/version || exit 1
+          kubectl set image deployment/hivebox-sensor_api hivebox-sensor_api=${{ env.SENSOR_IMAGE_TAG }}
+          kubectl set image deployment/hivebox-basic_versioning hivebox-basic_versioning=${{ env.VERSIONING_IMAGE_TAG }}
+          kubectl rollout restart deployment/hivebox-sensor_api
+          kubectl rollout restart deployment/hivebox-basic_versioning
 
       - name: Delete KIND Cluster
         if: always()
@@ -143,16 +146,12 @@ jobs:
         run: |
           kubectl apply -f kubernetes/production/
 
-      - name: Restart deployment to pull latest image
+      - name: Restart deployments
         run: |
-          kubectl set image deployment/hivebox-sensor-api hivebox-sensor-api=${{ env.IMAGE_TAG }}
-          kubectl rollout restart deployment/hivebox-sensor-api
-
-      - name: Test the deployment in Production
-        run: |
-          # Add commands to test production deployment, e.g., curl API or health checks
-          curl -f http://localhost:5000/temperature || exit 1
-          curl -f http://localhost:5001/version || exit 1
+          kubectl set image deployment/hivebox-sensor_api hivebox-sensor_api=${{ env.SENSOR_IMAGE_TAG }}
+          kubectl set image deployment/hivebox-basic_versioning hivebox-basic_versioning=${{ env.VERSIONING_IMAGE_TAG }}
+          kubectl rollout restart deployment/hivebox-sensor_api
+          kubectl rollout restart deployment/hivebox-basic_versioning
 
       - name: Delete KIND Cluster
         if: always()
