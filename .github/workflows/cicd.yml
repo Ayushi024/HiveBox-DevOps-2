@@ -62,7 +62,11 @@ jobs:
           docker run --rm \
             -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
-
+      
+      
+      - name: Display results.json content
+        run: cat results.json
+      
       - name: Convert Scorecard JSON results to SARIF format
         run: |
           jq '{
@@ -96,8 +100,7 @@ jobs:
             }]
           }' results.json > cleaned_results.json
 
-      - name: Display results.json content
-        run: cat results.json
+      
 
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v3
