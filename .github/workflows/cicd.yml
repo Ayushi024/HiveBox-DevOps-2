@@ -84,10 +84,10 @@ jobs:
          results: [.checks | map({
           ruleId: .name,
           message: { text: .reason },
-          level: "warning",  # Adjust based on score or severity
+          level: "warning",  
           locations: [{
             physicalLocation: {
-              artifactLocation: { uri: "https://github.com/your-repo" }
+              artifactLocation: { uri: "https://github.com/Ayushi024/HiveBox-DevOps-2" }
             }
           }]
         })]
@@ -97,7 +97,7 @@ jobs:
     - name: Upload Scorecard results
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: results.json
+        sarif_file: cleaned_results.json
 
     - name: Run Semgrep security scan
       run: |
