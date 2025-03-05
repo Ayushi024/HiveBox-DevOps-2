@@ -63,7 +63,9 @@ jobs:
         docker run --rm \
           -e GITHUB_AUTH_TOKEN="${{ secrets.TOKEN_GITHUB }}" \
           gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} > results.json
-
+    - name: Display results.json content
+      run: cat results.json  
+      
     - name: Upload Scorecard results
       uses: github/codeql-action/upload-sarif@v3
       with:
