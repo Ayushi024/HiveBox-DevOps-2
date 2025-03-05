@@ -66,47 +66,10 @@ jobs:
       - name: Display results.json content
         run: cat results.json  
 
-      - name: Clean and convert the SARIF JSON to correct format
-        run: |
-          echo '{
-            "version": "2.1.0",
-            "runs": [
-              {
-                "tool": {
-                  "driver": {
-                    "name": "CodeQL",
-                    "version": "v3.2.1"
-                  }
-                },
-                "results": [
-                  {
-                    "ruleId": "qlinjection",
-                    "message": {
-                      "text": "Potential SQL injection vulnerability."
-                    },
-                    "locations": [
-                      {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "/github/workspace/cleaned_results.json"
-                          },
-                          "region": {
-                            "startLine": 15,
-                            "startColumn": 5
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }' > cleaned_results.json
-
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: cleaned_results.json
+          sarif_file: results.json
 
       - name: Run Semgrep security scan
         run: |
