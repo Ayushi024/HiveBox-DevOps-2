@@ -88,7 +88,7 @@ jobs:
                       {
                         "physicalLocation": {
                           "artifactLocation": {
-                            "uri": "https://github.com/Ayushi024/HiveBox-DevOps-2/blob/feature-branch/src/example.py"
+                            "uri": "/github/workspace/cleaned_results.json"
                           },
                           "region": {
                             "startLine": 15,
