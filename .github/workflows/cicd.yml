@@ -87,7 +87,7 @@ jobs:
           level: "warning",  
           locations: [{
             physicalLocation: {
-              artifactLocation: { uri: "https://github.com/Ayushi024/HiveBox-DevOps-2" }
+              artifactLocation: { uri: "https://github.com/Ayushi024/HiveBox-DevOps-2/cleaned_results.json" }
             }
           }]
         })]
