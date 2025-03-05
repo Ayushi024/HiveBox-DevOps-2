@@ -79,7 +79,8 @@ jobs:
                 }
               },
               "results": [
-                .scorecard.checks[] | {
+                .scorecard.checks // [] | 
+                map({
                   "ruleId": .name,
                   "message": {
                     "text": .reason
@@ -95,7 +96,7 @@ jobs:
                       }
                     }
                   }]
-                }
+                })
               ]
             }]
           }' results.json > cleaned_results.json
