@@ -61,17 +61,43 @@ jobs:
       run: |
         docker pull gcr.io/openssf/scorecard:v3.2.1
         docker run --rm \
-       -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-        gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --output results.json
+        -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+        gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
+
+
 
 
     - name: Display results.json content
       run: cat results.json  
-      
+
+    - name: Clean and convert the SARIF JSON to correct format
+      run: |
+       jq '{
+       version: "2.1.0",
+        runs: [{
+         tool: {
+          driver: {
+            name: "OpenSSF Scorecard",
+            version: "v3.2.1"
+          }
+         },
+         results: [.checks | map({
+          ruleId: .name,
+          message: { text: .reason },
+          level: "warning",  
+          locations: [{
+            physicalLocation: {
+              artifactLocation: { uri: "https://github.com/Ayushi024/HiveBox-DevOps-2" }
+            }
+          }]
+        })]
+       }]
+       }' results.json > cleaned_results.json
+       
     - name: Upload Scorecard results
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: results.json
+        sarif_file: cleaned_results.json
 
     - name: Run Semgrep security scan
       run: |
