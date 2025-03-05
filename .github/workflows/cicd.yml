@@ -62,7 +62,7 @@ jobs:
           docker run --rm \
             -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
             gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
-      
+
       - name: Display results.json content
         run: cat results.json
 
@@ -87,7 +87,7 @@ jobs:
                     "locations": [{
                       "physicalLocation": {
                         "artifactLocation": {
-                          "uri": "file://$(pwd)/cleaned_results.json" # Ensuring correct file reference
+                          "uri": "file://${{ github.workspace }}/cleaned_results.json"
                         },
                         "region": {
                           "startLine": 1,
@@ -97,7 +97,7 @@ jobs:
                     }]
                   })
                 else
-                  [{"ruleId": "No-Issues", "message": {"text": "No issues found"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "file://$(pwd)/"},"region": {"startLine": 1,"startColumn": 1}}}]}]
+                  [{"ruleId": "No-Issues", "message": {"text": "No issues found"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "file://${{ github.workspace }}/"},"region": {"startLine": 1,"startColumn": 1}}}]}]
                 end
               )
             }]
@@ -110,11 +110,12 @@ jobs:
         run: |
           echo "Current working directory: $(pwd)"
           ls -alh
-  
+
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: $(pwd)/cleaned_results.json # Using absolute path
+          sarif_file: ${{ github.workspace }}/cleaned_results.json
+          wait-for-processing: true
 
       - name: Run Semgrep security scan
         run: |
@@ -124,7 +125,7 @@ jobs:
       - name: Upload Semgrep results to SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: $(pwd)/semgrep_results.json # Using absolute path
+          sarif_file: ${{ github.workspace }}/semgrep_results.json
 
       - name: Run Terrascan on Kubernetes manifests
         run: |
@@ -136,7 +137,7 @@ jobs:
       - name: Upload Terrascan results to SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: $(pwd)/terrascan_results.json # Using absolute path
+          sarif_file: ${{ github.workspace }}/terrascan_results.json
 
   docker-build:
     runs-on: ubuntu-latest
@@ -211,4 +212,4 @@ jobs:
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
-     
+          kind create cluster --name hivebox
