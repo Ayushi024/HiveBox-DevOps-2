@@ -6,10 +6,12 @@ import os
 
 app = Flask(__name__)
 
+
 @app.route("/version")
 def version():
     """Return API version."""
     return jsonify({"version": "1.0.0"})
+
 
 @app.route("/temperature")
 def temperature():
@@ -18,7 +20,9 @@ def temperature():
     if not api_key:
         return jsonify({"error": "Missing API key"}), 500
 
-    response = requests.get(f"https://api.openweathermap.org/data/2.5/weather?q=London&appid={api_key}&units=metric")
+    response = requests.get(
+        f"https://api.openweathermap.org/data/2.5/weather?q=London&appid={api_key}&units=metric"
+    )
     if response.status_code != 200:
         return jsonify({"error": "Failed to fetch temperature"}), 500
 
