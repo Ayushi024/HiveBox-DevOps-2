@@ -70,9 +70,29 @@ jobs:
     - name: Display results.json content
       run: cat results.json  
 
-    - name: Clean the SARIF JSON
+    - name: Clean and convert the SARIF JSON to correct format
       run: |
-        jq 'del(.date, .repo, .scorecard)' results.json > cleaned_results.json  
+       jq '{
+       version: "2.1.0",
+        runs: [{
+         tool: {
+          driver: {
+            name: "OpenSSF Scorecard",
+            version: "v3.2.1"
+          }
+         },
+         results: [.checks | map({
+          ruleId: .name,
+          message: { text: .reason },
+          level: "warning",  # Adjust based on score or severity
+          locations: [{
+            physicalLocation: {
+              artifactLocation: { uri: "https://github.com/your-repo" }
+            }
+          }]
+        })]
+       }]
+       }' results.json > cleaned_results.json
        
     - name: Upload Scorecard results
       uses: github/codeql-action/upload-sarif@v3
