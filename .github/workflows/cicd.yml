@@ -57,6 +57,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+
+      - name: Debug GitHub Token
+        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" 
+
       - name: Run OpenSSF Scorecard using Docker
         run: |
           docker pull gcr.io/openssf/scorecard:v3.2.1
@@ -93,7 +97,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: terrascan_results.json
-        # Upload Terrascan results
+ 
 
   docker-build:
     runs-on: ubuntu-latest
