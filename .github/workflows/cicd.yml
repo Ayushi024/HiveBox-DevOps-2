@@ -38,7 +38,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest sensor_api/test_app basic_versioning/test_version --maxfail=5 --disable-warnings -q
+          pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
 
       - name: Test network connectivity to OpenWeather API
         run: |
