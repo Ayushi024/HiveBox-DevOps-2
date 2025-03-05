@@ -4,6 +4,7 @@ from flask import Flask, jsonify
 
 app = Flask(__name__)
 
+
 @app.route("/version")
 def version():
     """Returns the application version."""
@@ -16,7 +17,10 @@ def temperature():
     api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not api_key:
-        return jsonify({"error": "API key missing"}), 500  # ✅ Ensures API key is required
+        return (
+            jsonify({"error": "API key missing"}),
+            500,
+        )  # ✅ Ensures API key is required
 
     try:
         response = requests.get(
@@ -24,8 +28,15 @@ def temperature():
         )
         data = response.json()
 
-        if response.status_code != 200 or "main" not in data or "temp" not in data["main"]:
-            return jsonify({"error": "Invalid API response"}), 500  # ✅ Handles bad responses
+        if (
+            response.status_code != 200
+            or "main" not in data
+            or "temp" not in data["main"]
+        ):
+            return (
+                jsonify({"error": "Invalid API response"}),
+                500,
+            )  # ✅ Handles bad responses
 
         temp = data["main"]["temp"]
         status = "Good" if 10 <= temp <= 30 else "Too Cold" if temp < 10 else "Too Hot"
@@ -33,7 +44,10 @@ def temperature():
         return jsonify({"temperature_celsius": temp, "status": status})
 
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500  # ✅ Catch unexpected errors
+        return (
+            jsonify({"error": f"Unexpected error: {str(e)}"}),
+            500,
+        )  # ✅ Catch unexpected errors
 
 
 if __name__ == "__main__":
