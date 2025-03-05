@@ -37,11 +37,13 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn("error", response.json)
 
-    def test_temperature_missing_api_key(self):
+    @patch("os.getenv", return_value=None)  # Mock getenv to return None
+    def test_temperature_missing_api_key(self, mock_getenv):
         """Test handling of missing OpenWeather API key."""
-        with patch.dict(app.config, {"OPENWEATHER_API_KEY": None}):
-            response = self.client.get("/temperature")
-            self.assertEqual(response.status_code, 500)
+        response = self.client.get("/temperature")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("error", response.json)
+        self.assertEqual(response.json["error"], "API key missing")  # Ensure correct message
 
 
 if __name__ == "__main__":
