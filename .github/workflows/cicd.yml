@@ -69,7 +69,11 @@ jobs:
 
     - name: Display results.json content
       run: cat results.json  
-      
+
+    - name: Clean the SARIF JSON
+      run: |
+        jq 'del(.date, .repo, .scorecard)' results.json > cleaned_results.json  
+       
     - name: Upload Scorecard results
       uses: github/codeql-action/upload-sarif@v3
       with:
