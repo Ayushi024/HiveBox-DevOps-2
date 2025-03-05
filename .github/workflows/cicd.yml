@@ -48,6 +48,7 @@ jobs:
 
       - name: Test network connectivity to OpenWeather API
         run: |
+          echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
   security-check:
@@ -66,6 +67,18 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.json
+
+      - name: Run Semgrep security scan
+        run: |
+          pip install semgrep
+          semgrep scan --config=auto .
+
+      - name: Run Terrascan on Kubernetes manifests
+        run: |
+          curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan-linux-amd64 -o terrascan
+          chmod +x terrascan
+          sudo mv terrascan /usr/local/bin/
+          terrascan scan -t k8s -d kubernetes/
 
   docker-build:
     runs-on: ubuntu-latest
