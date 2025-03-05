@@ -50,18 +50,18 @@ jobs:
         run: |
           echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
-jobs:
-  scorecard-check:
+
+  security-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Run OpenSSF Scorecard using Docker
-        run: |
-          docker pull gcr.io/openssf/scorecard:v3.2.1
-          docker run --rm gcr.io/openssf/scorecard:v3.2.1 > results.json
-        # This will save the output to 'results.json' to upload later
+      run: |
+         docker pull gcr.io/openssf/scorecard:v3.2.1
+         docker run --rm gcr.io/openssf/scorecard:v3.2.1 > results.json
+
 
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v2
