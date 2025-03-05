@@ -86,6 +86,9 @@ jobs:
         sudo mv terrascan /usr/local/bin/
         terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
 
+    - name: Display results.json content
+      run: cat results.json  
+
     - name: Upload Terrascan results to SARIF
       uses: github/codeql-action/upload-sarif@v3
       with:
