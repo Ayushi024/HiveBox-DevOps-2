@@ -79,10 +79,10 @@ jobs:
                 }
               },
               "results": [
-                .[] | {
-                  "ruleId": .rule_id,
+                .scorecard.checks[] | {
+                  "ruleId": .name,
                   "message": {
-                    "text": .description
+                    "text": .reason
                   },
                   "locations": [{
                     "physicalLocation": {
