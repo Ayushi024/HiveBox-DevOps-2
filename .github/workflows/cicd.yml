@@ -40,9 +40,12 @@ jobs:
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
 
+      - name: Set Environment Variables
+        run: echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> $GITHUB_ENV
+
       - name: Test network connectivity to OpenWeather API
         run: |
-          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=${{ secrets.OPENWEATHER_API_KEY }}"
+          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
   security-check:
     runs-on: ubuntu-latest
