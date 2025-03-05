@@ -100,7 +100,7 @@ jobs:
                     }]
                   })
                 else
-                  [{"ruleId": "No-Issues", "message": {"text": "No issues found"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "https://github.com/Ayushi024/HiveBox-DevOps-2"},"region": {"startLine": 1,"startColumn": 1}}}]}]
+                  [{"ruleId": "No-Issues", "message": {"text": "No issues found"}, "locations": [{"physicalLocation": {"artifactLocation": {"uri": "file:///home/runner/work/HiveBox-DevOps-2/HiveBox-DevOps-2/"},"region": {"startLine": 1,"startColumn": 1}}}]}]
                 end
               )
             }]
