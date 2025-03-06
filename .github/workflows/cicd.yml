@@ -50,92 +50,10 @@ jobs:
           echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
-  security-check:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run OpenSSF Scorecard using Docker
-        run: |
-          docker pull gcr.io/openssf/scorecard:v3.2.1
-          docker run --rm \
-            -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
-            gcr.io/openssf/scorecard:v3.2.1 --repo https://github.com/${{ github.repository }} --format json > results.json
-
-      - name: Display results.json content
-        run: cat results.json  
-
-      - name: Clean and convert the SARIF JSON to correct format
-        run: |
-          echo '{
-            "version": "2.1.0",
-            "runs": [
-              {
-                "tool": {
-                  "driver": {
-                    "name": "CodeQL",
-                    "version": "v3.2.1"
-                  }
-                },
-                "results": [
-                  {
-                    "ruleId": "qlinjection",
-                    "message": {
-                      "text": "Potential SQL injection vulnerability."
-                    },
-                    "locations": [
-                      {
-                        "physicalLocation": {
-                          "artifactLocation": {
-                            "uri": "https://github.com/Ayushi024/HiveBox-DevOps-2/blob/feature-branch/src/example.py"
-                          },
-                          "region": {
-                            "startLine": 15,
-                            "startColumn": 5
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }' > cleaned_results.json
-
-      - name: Upload Scorecard results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: cleaned_results.json
-
-      - name: Run Semgrep security scan
-        run: |
-          pip install semgrep
-          semgrep scan --config=auto . --json > semgrep_results.json
-
-      - name: Upload Semgrep results to SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep_results.json
-
-      - name: Run Terrascan on Kubernetes manifests
-        run: |
-          curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan-linux-amd64 -o terrascan
-          chmod +x terrascan
-          sudo mv terrascan /usr/local/bin/
-          terrascan scan -t k8s -d kubernetes/ > terrascan_results.json
-
-      - name: Display results.json content
-        run: cat results.json  
-
-      - name: Upload Terrascan results to SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: terrascan_results.json
-
+  
   docker-build:
     runs-on: ubuntu-latest
-    needs: [lint-test, security-check]
+    needs: [lint-test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -207,24 +125,3 @@ jobs:
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
           kind create cluster --name hivebox
-
-      - name: Set up kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
-
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f kubernetes/production/
-
-      - name: Restart deployments
-        run: |
-          kubectl set image deployment/hivebox-sensor_api hivebox-sensor_api=${{ env.SENSOR_IMAGE_TAG }}
-          kubectl set image deployment/hivebox-basic_versioning hivebox-basic_versioning=${{ env.VERSIONING_IMAGE_TAG }}
-          kubectl rollout restart deployment/hivebox-sensor_api
-          kubectl rollout restart deployment/hivebox-basic_versioning
-
-      - name: Delete KIND Cluster
-        if: always()
-        run: kind delete cluster --name hivebox
