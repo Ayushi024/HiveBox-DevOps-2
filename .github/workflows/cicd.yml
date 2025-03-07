@@ -102,6 +102,12 @@ jobs:
     - name: Apply Kubernetes manifests
       run: |
         kubectl apply -f kubernetes/
+    
+    - name: Set Environment Variables
+      run: |
+        echo "SENSOR_IMAGE_TAG=ghcr.io/ayushi024/hivebox-sensor-api:latest" >> $GITHUB_ENV
+        echo "VERSIONING_IMAGE_TAG=ghcr.io/ayushi024/hivebox-basic-versioning:latest" >> $GITHUB_ENV
+
     - name: Debug Environment Variables
       run: |
         echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
