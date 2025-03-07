@@ -117,8 +117,8 @@ jobs:
         exit 1
         fi
    
-   - name: Restart deployments
-      run: |
+     - name: Restart deployments
+       run: |
         kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
         kubectl set image deployment/ hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
         kubectl rollout restart deployment/hivebox-sensor-api
