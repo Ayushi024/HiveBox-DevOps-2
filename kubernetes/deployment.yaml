@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hivebox-sensor_api
+  name: hivebox-sensor-api  # Fixed: Changed underscore (_) to hyphen (-)
   labels:
-    app: sensor_api
+    app: sensor-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: sensor_api
+      app: sensor-api
   template:
     metadata:
       labels:
-        app: sensor_api
+        app: sensor-api
     spec:
       containers:
-        - name: sensor_api
-          image: ghcr.io/ayushi024/hivebox-sensor_api:latest  # Updated dynamically in CI/CD
+        - name: sensor-api  # Fixed: Changed underscore (_) to hyphen (-)
+          image: ghcr.io/ayushi024/hivebox-sensor-api:latest  # Updated dynamically in CI/CD
           ports:
             - containerPort: 5000
           env:
