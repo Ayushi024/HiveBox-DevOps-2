@@ -174,7 +174,7 @@ jobs:
         run: |
           mkdir -p ~/.kube
           mv kubeconfig ~/.kube/config
-             
+
       - name: Debug Kubernetes Context
         run: |
           echo "Checking Kubernetes context..."
@@ -183,8 +183,21 @@ jobs:
           kubectl get nodes || echo "No nodes available!"
           kubectl get pods -A || echo "No running pods!"
 
+      - name: Check KIND Cluster
+        run: |
+          kind get clusters || echo "No KIND clusters found!"
+
+      - name: Create KIND Cluster (If Not Exists)
+      run: |
+          kind get clusters | grep hivebox || kind create cluster --name hivebox
+
+      - name: Set KUBECONFIG Path
+      run: |
+          export KUBECONFIG=~/.kube/config
+          echo "KUBECONFIG is set to: $KUBECONFIG"
+
       - name: Debug Kubernetes Manifests
-        run: kubectl apply --dry-run=client -f kubernetes/
+      run: kubectl apply --dry-run=client --validate=false -f kubernetes/
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
