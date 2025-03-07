@@ -64,7 +64,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker images
-        id: export-tags  # Add an ID to use in outputs
+        id: export-tags
         run: |
           SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
           VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
@@ -108,23 +108,6 @@ jobs:
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
 
-      - name: Debug Environment Variables
-        run: |
-          echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
-          echo "VERSIONING_IMAGE_TAG=${{ env.VERSIONING_IMAGE_TAG }}"
-          if [[ -z "${{ env.SENSOR_IMAGE_TAG }}" || -z "${{ env.VERSIONING_IMAGE_TAG }}" ]]; then
-            echo "Error: One or both environment variables are missing!"
-            exit 1
-          fi
-      - name: Debug Kubernetes Deployments
-        run: |
-          echo "Checking all Kubernetes resources..."
-          kubectl get all -A
-          echo "Listing deployments in all namespaces..."
-          kubectl get deployments -A
-          echo "Checking if hivebox-basic-versioning exists..."
-          kubectl get deployment hivebox-basic-versioning || echo "Deployment not found!"
-
       - name: Restart deployments
         run: |
           kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
@@ -132,15 +115,7 @@ jobs:
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
 
-      - name: Debug Kubernetes Resources
-        run: |
-          kubectl get all -A
-          kubectl describe deployment hivebox-sensor-api
-          kubectl describe deployment hivebox-basic-versioning
-          kubectl get pods
-          kubectl logs -l app=sensor-api --tail=50
-  
-    deploy-production:
+  deploy-production:
     runs-on: ubuntu-latest
     needs: deploy-staging
     environment: production
@@ -164,7 +139,6 @@ jobs:
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
-
 
       - name: Restart deployments
         run: |
