@@ -30,9 +30,25 @@ jobs:
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
+      - name: Set Environment Variables
+        run: |
+          echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> $GITHUB_ENV
+          echo "APP_VERSION=v1.0.0" >> $GITHUB_ENV
+
+      - name: Start APIs (Run in Background)
+        run: |
+          python sensor_api/app.py --host=0.0.0.0 --port=5000 & 
+          python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 & 
+          sleep 5
+
       - name: Run unit tests
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
+
+      - name: Test network connectivity to OpenWeather API
+        run: |
+          echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
+          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
   docker-build:
     runs-on: ubuntu-latest
@@ -48,7 +64,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker images
-        id: export-tags
+        id: export-tags  # Add an ID to use in outputs
         run: |
           SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
           VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
@@ -92,6 +108,23 @@ jobs:
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
 
+      - name: Debug Environment Variables
+        run: |
+          echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
+          echo "VERSIONING_IMAGE_TAG=${{ env.VERSIONING_IMAGE_TAG }}"
+          if [[ -z "${{ env.SENSOR_IMAGE_TAG }}" || -z "${{ env.VERSIONING_IMAGE_TAG }}" ]]; then
+            echo "Error: One or both environment variables are missing!"
+            exit 1
+          fi
+      - name: Debug Kubernetes Deployments
+        run: |
+          echo "Checking all Kubernetes resources..."
+          kubectl get all -A
+          echo "Listing deployments in all namespaces..."
+          kubectl get deployments -A
+          echo "Checking if hivebox-basic-versioning exists..."
+          kubectl get deployment hivebox-basic-versioning || echo "Deployment not found!"
+
       - name: Restart deployments
         run: |
           kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
@@ -99,6 +132,14 @@ jobs:
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
 
+      - name: Debug Kubernetes Resources
+        run: |
+          kubectl get all -A
+          kubectl describe deployment hivebox-sensor-api
+          kubectl describe deployment hivebox-basic-versioning
+          kubectl get pods
+          kubectl logs -l app=sensor-api --tail=50
+      
       - name: Save kubeconfig
         run: |
           mkdir -p ~/.kube
@@ -111,7 +152,8 @@ jobs:
           name: kubeconfig
           path: kubeconfig
 
-  deploy-production:
+
+    deploy-production:
     runs-on: ubuntu-latest
     needs: deploy-staging
     environment: production
@@ -121,6 +163,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
 
       - name: Download kubeconfig
         uses: actions/download-artifact@v4
@@ -131,7 +174,7 @@ jobs:
         run: |
           mkdir -p ~/.kube
           mv kubeconfig ~/.kube/config
-
+             
       - name: Debug Kubernetes Context
         run: |
           echo "Checking Kubernetes context..."
@@ -140,8 +183,12 @@ jobs:
           kubectl get nodes || echo "No nodes available!"
           kubectl get pods -A || echo "No running pods!"
 
+      - name: Debug Kubernetes Manifests
+        run: kubectl apply --dry-run=client -f kubernetes/
+
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
+
 
       - name: Restart deployments
         run: |
