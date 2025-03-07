@@ -170,16 +170,16 @@ jobs:
           kind get clusters || echo "No KIND clusters found!"
 
       - name: Create KIND Cluster (If Not Exists)
-      run: |
+        run: |
           kind get clusters | grep hivebox || kind create cluster --name hivebox
 
       - name: Set KUBECONFIG Path
-      run: |
+        run: |
           export KUBECONFIG=~/.kube/config
           echo "KUBECONFIG is set to: $KUBECONFIG"
 
       - name: Debug Kubernetes Manifests
-      run: kubectl apply --dry-run=client --validate=false -f kubernetes/
+        run: kubectl apply --dry-run=client --validate=false -f kubernetes/
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -f kubernetes/
