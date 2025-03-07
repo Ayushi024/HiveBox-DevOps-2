@@ -4,7 +4,7 @@ metadata:
   name: hivebox-sensor-service
 spec:
   selector:
-    app: sensor-api
+    app: sensor_api
   ports:
     - protocol: TCP
       port: 80
