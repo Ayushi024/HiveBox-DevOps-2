@@ -116,6 +116,14 @@ jobs:
             echo "Error: One or both environment variables are missing!"
             exit 1
           fi
+      - name: Debug Kubernetes Deployments
+        run: |
+          echo "Checking all Kubernetes resources..."
+          kubectl get all -A
+          echo "Listing deployments in all namespaces..."
+          kubectl get deployments -A
+          echo "Checking if hivebox-basic-versioning exists..."
+          kubectl get deployment hivebox-basic-versioning || echo "Deployment not found!"
 
       - name: Restart deployments
         run: |
