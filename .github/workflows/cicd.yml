@@ -103,8 +103,16 @@ jobs:
     - name: Apply Kubernetes manifests
       run: |
         kubectl apply -f kubernetes/
-
-    - name: Restart deployments
+    - name: Debug Environment Variables
+      run: |
+       echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
+       echo "VERSIONING_IMAGE_TAG=${{ env.VERSIONING_IMAGE_TAG }}"
+       if [[ -z "${{ env.SENSOR_IMAGE_TAG }}" || -z "${{ env.VERSIONING_IMAGE_TAG }}" ]]; then
+       echo "Error: One or both environment variables are missing!"
+       exit 1
+       fi
+   
+   - name: Restart deployments
       run: |
         kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
         kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
