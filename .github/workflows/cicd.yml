@@ -104,12 +104,12 @@ jobs:
       run: |
         kubectl apply -f kubernetes/
 
-   - name: Restart deployments
-    run: |
-       kubectl set image deployment/hivebox-sensor_api sensor_api=${{ env.SENSOR_IMAGE_TAG }}
-       kubectl set image deployment/hivebox-basic_versioning basic_versioning=${{ env.VERSIONING_IMAGE_TAG }}
-       kubectl rollout restart deployment/hivebox-sensor_api
-       kubectl rollout restart deployment/hivebox-basic_versioning
+    - name: Restart deployments
+      run: |
+        kubectl set image deployment/hivebox-sensor_api sensor_api=${{ env.SENSOR_IMAGE_TAG }}
+        kubectl set image deployment/hivebox-basic_versioning basic_versioning=${{ env.VERSIONING_IMAGE_TAG }}
+        kubectl rollout restart deployment/hivebox-sensor_api
+        kubectl rollout restart deployment/hivebox-basic_versioning
 
 
     - name: Debug Staging Deployment on Failure
