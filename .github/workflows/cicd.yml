@@ -50,7 +50,7 @@ jobs:
           echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
 
-    docker-build:
+  docker-build:
     runs-on: ubuntu-latest
     needs: [lint-test]
     outputs:
@@ -74,16 +74,11 @@ jobs:
 
           docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
           docker push $VERSIONING_IMAGE_TAG
-
-          echo "SENSOR_IMAGE_TAG=$SENSOR_IMAGE_TAG" >> $GITHUB_ENV
-          echo "VERSIONING_IMAGE_TAG=$VERSIONING_IMAGE_TAG" >> $GITHUB_ENV
           
-          # Export outputs for next job
           echo "sensor_image_tag=$SENSOR_IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "versioning_image_tag=$VERSIONING_IMAGE_TAG" >> $GITHUB_OUTPUT
 
-
-    deploy-staging:
+  deploy-staging:
     runs-on: ubuntu-latest
     needs: docker-build
     environment: staging
@@ -128,15 +123,11 @@ jobs:
           kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
-           - name: Debug Kubernetes Resources
-       
-           - name: Debug Kubernetes Resources
-      
-      - name: Debug kubernetes Resources
-        run: |
-         kubectl get all -A
-         kubectl describe deployment hivebox-sensor-api
-         kubectl describe deployment hivebox-basic-versioning
-         kubectl get pods
-         kubectl logs -l app=sensor-api --tail=50
 
+      - name: Debug Kubernetes Resources
+        run: |
+          kubectl get all -A
+          kubectl describe deployment hivebox-sensor-api
+          kubectl describe deployment hivebox-basic-versioning
+          kubectl get pods
+          kubectl logs -l app=sensor-api --tail=50
