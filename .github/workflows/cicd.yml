@@ -66,17 +66,25 @@ jobs:
       - name: Build and push Docker images
         id: export-tags
         run: |
-          SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
-          VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
+         SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
+         VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
 
-          docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
-          docker push $SENSOR_IMAGE_TAG
+         echo "SENSOR_IMAGE_TAG=$SENSOR_IMAGE_TAG"
+         echo "VERSIONING_IMAGE_TAG=$VERSIONING_IMAGE_TAG"
 
-          docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
-          docker push $VERSIONING_IMAGE_TAG
-          
-          echo "sensor_image_tag=$SENSOR_IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "versioning_image_tag=$VERSIONING_IMAGE_TAG" >> $GITHUB_OUTPUT
+         docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
+         docker push $SENSOR_IMAGE_TAG
+
+         docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
+         docker push $VERSIONING_IMAGE_TAG
+
+         echo "sensor_image_tag=$SENSOR_IMAGE_TAG" >> $GITHUB_OUTPUT
+         echo "versioning_image_tag=$VERSIONING_IMAGE_TAG" >> $GITHUB_OUTPUT
+      
+      - name: Debug Outputs
+        run: |
+         echo "Sensor API Image Tag Output: ${{ steps.export-tags.outputs.sensor_image_tag }}"
+         echo "Versioning API Image Tag Output: ${{ steps.export-tags.outputs.versioning_image_tag }}"
 
   deploy-staging:
     runs-on: ubuntu-latest
