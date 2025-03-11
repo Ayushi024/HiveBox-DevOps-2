@@ -173,6 +173,17 @@ jobs:
           kubectl cluster-info || echo "Cluster is not running!"
           kubectl get nodes || echo "No nodes available!"
           kubectl get pods -A || echo "No running pods!"
+        
+      - name: Verify kubeconfig
+        run: |
+          echo "Checking kubeconfig..."
+          if [[ ! -f ~/.kube/config ]]; then
+            echo "Error: kubeconfig file is missing!"
+            exit 1
+          fi
+          kubectl config current-context || echo "No current context!"
+          kubectl cluster-info || echo "Cluster is not running!"
+          kubectl get nodes || echo "No nodes available!"
 
       - name: Debug Image Tags
         run: |
