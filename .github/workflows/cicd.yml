@@ -174,7 +174,7 @@ jobs:
           kubectl get nodes || echo "No nodes available!"
           kubectl get pods -A || echo "No running pods!"
         
-      - name: Verify kubeconfig
+      - name: Verifying kubeconfig
         run: |
           echo "Checking kubeconfig..."
           if [[ ! -f ~/.kube/config ]]; then
