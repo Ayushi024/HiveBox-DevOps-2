@@ -131,6 +131,20 @@ jobs:
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
 
+      - name: Debug Kubernetes Deployment (Staging)
+        run: |
+          echo " Checking cluster status..." 
+          kubectl get nodes
+          kubectl get pods -A
+          kubectl get deployments -A
+          echo " Checking event logs..." 
+          kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
+          echo " Describing failed deployments..." 
+          kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
+          kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
+          echo " Checking logs of failing pods..."
+          kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs found for hivebox-sensor-api"
+          kubectl logs -l app=hivebox-basic-versioning --tail=50 || echo "No logs found for hivebox-basic-versioning"
 
       - name: Save kubeconfig
         run: |
@@ -160,6 +174,21 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: kubeconfig
+    
+    - name: Debug Kubernetes Deployment (Production)
+      run: |
+        echo " Checking cluster status..."
+        kubectl get nodes
+        kubectl get pods -A
+        kubectl get deployments -A
+        echo " Checking event logs..."
+        kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
+        echo " Describing failed deployments..."
+        kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
+        kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
+        echo " Checking logs of failing pods..."
+        kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs found for hivebox-sensor-api"
+        kubectl logs -l app=hivebox-basic-versioning --tail=50 || echo "No logs found for hivebox-basic-versioning"
 
     - name: Move kubeconfig to correct location
       run: |
