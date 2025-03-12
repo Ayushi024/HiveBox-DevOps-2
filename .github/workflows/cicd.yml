@@ -143,3 +143,50 @@ jobs:
         with:
           name: kubeconfig
           path: kubeconfig
+  
+
+  deploy-production:
+  runs-on: ubuntu-latest
+  needs: deploy-staging
+  environment: production
+  env:
+    SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
+    VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download kubeconfig from staging
+      uses: actions/download-artifact@v4
+      with:
+        name: kubeconfig
+
+    - name: Move kubeconfig to correct location
+      run: |
+        mkdir -p ~/.kube
+        mv kubeconfig ~/.kube/config
+        export KUBECONFIG=~/.kube/config
+
+    - name: Verify kubeconfig and cluster
+      run: |
+        echo "Checking Kubernetes context..."
+        kubectl config current-context || echo "No current context!"
+        kubectl cluster-info || echo "Cluster is not running!"
+        kubectl get nodes || echo "No nodes available!"
+        kubectl get pods -A || echo "No running pods!"
+
+    - name: Ensure KIND Cluster Exists
+      run: |
+        if ! kind get clusters | grep -q "hivebox"; then
+          echo "KIND cluster 'hivebox' not found! Creating..."
+          kind create cluster --name hivebox
+          kind export kubeconfig --name hivebox
+        else
+          echo "KIND cluster 'hivebox' already exists!"
+        fi
+
+    - name: Apply Kubernetes Manifests
+      run: |
+        kubectl apply -f kubernetes/
+        kubectl rollout status deployment/hivebox-sensor-api
+        kubectl rollout status deployment/hivebox-basic-versioning
