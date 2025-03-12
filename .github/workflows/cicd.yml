@@ -145,73 +145,42 @@ jobs:
           path: kubeconfig
 
   deploy-production:
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    environment: production
-    env:
-      SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
-      VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  runs-on: ubuntu-latest
+  needs: deploy-staging
+  environment: production
+  env:
+    SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
+    VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
 
-      - name: Configure Kubeconfig
-        run: |
-          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 --decode > ~/.kube/config
-          export KUBECONFIG=~/.kube/config
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-<<<<<<< HEAD
-=======
-      - name: Debug Kubernetes Context
-        run: |
-          echo "Checking Kubernetes context..."
-          kubectl config current-context || echo "No current context!"
-          kubectl cluster-info || echo "Cluster is not running!"
-          kubectl get nodes || echo "No nodes available!"
-          kubectl get pods -A || echo "No running pods!"
-        
-      - name: Verifying kubeconfig
-        run: |
-          echo "Checking kubeconfig..."
-          if [[ ! -f ~/.kube/config ]]; then
-            echo "Error: kubeconfig file is missing!"
-            exit 1
-          fi
-          kubectl config current-context || echo "No current context!"
-          kubectl cluster-info || echo "Cluster is not running!"
-          kubectl get nodes || echo "No nodes available!"
+    - name: Check KIND Cluster
+      run: |
+        if ! kind get clusters | grep hivebox; then
+          echo "KIND cluster 'hivebox' not found! Creating..."
+          kind create cluster --name hivebox
+        else
+          echo "KIND cluster 'hivebox' already exists!"
+        fi
 
-      - name: Debug Image Tags
-        run: |
-          echo "Sensor API Image Tag: $SENSOR_IMAGE_TAG"
-          echo "Versioning API Image Tag: $VERSIONING_IMAGE_TAG"
-      
-      - name: Check KIND Cluster
-        run: |
-          if ! kind get clusters | grep hivebox; then
-            echo "KIND cluster 'hivebox' not found! Creating..."
-            kind create cluster --name hivebox
-            kind export kubeconfig --name hivebox
-          else
-            echo "KIND cluster 'hivebox' already exists!"
-          fi
+    - name: Set Kubernetes Context
+      run: |
+        kind export kubeconfig --name hivebox
+        kubectl cluster-info
 
-      - name: Ensure Kubernetes Context is Correct
-        run: |
-          export KUBECONFIG=~/.kube/config
-          kubectl config use-context kind-hivebox || echo "Failed to set context"
+    - name: Debug Image Tags
+      run: |
+        echo "Sensor API Image Tag: $SENSOR_IMAGE_TAG"
+        echo "Versioning API Image Tag: $VERSIONING_IMAGE_TAG"
 
-      - name: Debug Kubernetes Manifests
-        run: kubectl apply --dry-run=client --validate=false -f kubernetes/
+    - name: Apply Kubernetes Manifests
+      run: kubectl apply -f kubernetes/
 
->>>>>>> 2b3a42cc6515eeda926091d030d4f3dcfda85136
-      - name: Apply Kubernetes Manifests
-        run: kubectl apply -f kubernetes/
-
-      - name: Restart deployments
-        run: |
-          kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }} --record
-          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }} --record
-
-          kubectl rollout status deployment/hivebox-sensor-api
-          kubectl rollout status deployment/hivebox-basic-versioning
+    - name: Restart Deployments
+      run: |
+        kubectl set image deployment/hivebox-sensor-api sensor-api=$SENSOR_IMAGE_TAG
+        kubectl set image deployment/hivebox-basic-versioning basic-versioning=$VERSIONING_IMAGE_TAG
+        kubectl rollout status deployment/hivebox-sensor-api
+        kubectl rollout status deployment/hivebox-basic-versioning
