@@ -143,7 +143,16 @@ jobs:
         with:
           name: kubeconfig
           path: kubeconfig
-  
+     
+      - name: Debug Kubernetes Deployment
+        run: |
+         echo "Checking Deployments..."
+         kubectl get deployments -A
+         echo "Checking Pods..."
+         kubectl get pods -A
+         echo "Checking Events..."
+         kubectl get events --sort-by=.metadata.creationTimestamp
+
 
   deploy-production:
    runs-on: ubuntu-latest
@@ -184,9 +193,18 @@ jobs:
          else
            echo "KIND cluster 'hivebox' already exists!"
          fi
-
+    
      - name: Apply Kubernetes Manifests
        run: |
          kubectl apply -f kubernetes/
          kubectl rollout status deployment/hivebox-sensor-api
          kubectl rollout status deployment/hivebox-basic-versioning
+   
+     - name: Debug Kubernetes Deployment
+       run: |
+         echo "Checking Deployments..."
+         kubectl get deployments -A
+         echo "Checking Pods..."
+         kubectl get pods -A
+         echo "Checking Events..."
+         kubectl get events --sort-by=.metadata.creationTimestamp
