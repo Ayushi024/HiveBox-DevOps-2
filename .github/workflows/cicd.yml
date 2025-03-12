@@ -145,48 +145,48 @@ jobs:
           path: kubeconfig
 
   deploy-production:
-  runs-on: ubuntu-latest
-  needs: deploy-staging
-  environment: production
-  env:
-    SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
-    VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
+   runs-on: ubuntu-latest
+   needs: deploy-staging
+   environment: production
+   env:
+     SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
+     VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+   steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
 
 
-    - name: Check KIND Cluster
-      run: |
-        if ! kind get clusters | grep hivebox; then
-          echo "KIND cluster 'hivebox' not found! Creating..."
-          kind create cluster --name hivebox
-        else
-          echo "KIND cluster 'hivebox' already exists!"
-        fi
+     - name: Check KIND Cluster
+       run: |
+         if ! kind get clusters | grep hivebox; then
+           echo "KIND cluster 'hivebox' not found! Creating..."
+           kind create cluster --name hivebox
+         else
+           echo "KIND cluster 'hivebox' already exists!"
+         fi
 
-    - name: Set Kubernetes Context
-      run: |
-        kind export kubeconfig --name hivebox
-        kubectl cluster-info
+     - name: Set Kubernetes Context
+       run: |
+         kind export kubeconfig --name hivebox
+         kubectl cluster-info
 
-    - name: Debug Image Tags
-      run: |
-        echo "Sensor API Image Tag: $SENSOR_IMAGE_TAG"
-        echo "Versioning API Image Tag: $VERSIONING_IMAGE_TAG"
+     - name: Debug Image Tags
+       run: |
+         echo "Sensor API Image Tag: $SENSOR_IMAGE_TAG"
+         echo "Versioning API Image Tag: $VERSIONING_IMAGE_TAG"
 
-    - name: Apply Kubernetes Manifests
-      run: kubectl apply -f kubernetes/
+     - name: Apply Kubernetes Manifests
+       run: kubectl apply -f kubernetes/
 
-    - name: Apply Kubernetes Manifests
-      run: kubectl apply -f kubernetes/
+     - name: Apply Kubernetes Manifests
+       run: kubectl apply -f kubernetes/
 
-    - name: Restart deployments
-      run: |
-          kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }} --record
-          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }} --record
+     - name: Restart deployments
+       run: |
+           kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }} --record
+           kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }} --record
 
-          kubectl rollout status deployment/hivebox-sensor-api
-          kubectl rollout status deployment/hivebox-basic-versioning
+           kubectl rollout status deployment/hivebox-sensor-api
+           kubectl rollout status deployment/hivebox-basic-versioning
 
