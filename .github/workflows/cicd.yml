@@ -87,111 +87,58 @@ jobs:
          echo "Versioning API Image Tag Output: ${{ steps.export-tags.outputs.versioning_image_tag }}"
 
   deploy-staging:
-  runs-on: ubuntu-latest
-  needs: docker-build
-  environment: staging
-  env:
-    SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
-    VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    runs-on: ubuntu-latest
+    needs: docker-build
+    environment: staging
+    env:
+      SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
+      VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Debug Image Tags
-      run: |
-        echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
-        echo "VERSIONING_IMAGE_TAG=${{ env.VERSIONING_IMAGE_TAG }}"
+      - name: Install KIND
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
 
-    - name: Fail if Image Tags Are Empty
-      run: |
-        if [[ -z "${{ env.SENSOR_IMAGE_TAG }}" || -z "${{ env.VERSIONING_IMAGE_TAG }}" ]]; then
-          echo "Error: One or both image tags are missing!"
-          exit 1
-        fi
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
-    - name: Set up Kubernetes Context
-      run: |
-        kind export kubeconfig --name hivebox
-        kubectl cluster-info
+      - name: Ensure KIND Cluster Exists
+        run: |
+          if ! kind get clusters | grep -q "hivebox"; then
+            echo "KIND cluster 'hivebox' not found! Creating..."
+            kind create cluster --name hivebox
+          else
+            echo "KIND cluster 'hivebox' already exists!"
+          fi
 
-    - name: Apply Kubernetes Manifests
-      run: kubectl apply -f kubernetes/
+      - name: Set Kubernetes Context
+        run: kind export kubeconfig --name hivebox
 
-    - name: Restart Deployments
-      run: |
-        kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
-        kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
-        kubectl rollout status deployment/hivebox-sensor-api
-        kubectl rollout status deployment/hivebox-basic-versioning
+      - name: Apply Kubernetes Manifests
+        run: kubectl apply -f kubernetes/
 
-  deploy-production:
-   runs-on: ubuntu-latest
-   needs: deploy-staging
-   environment: production
-   env:
-     SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
-     VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
+      - name: Restart Deployments
+        run: |
+          kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
+          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
+          kubectl rollout restart deployment/hivebox-sensor-api
+          kubectl rollout restart deployment/hivebox-basic-versioning
 
-   steps:
-     - name: Checkout code
-       uses: actions/checkout@v4
-
-    - name: Download kubeconfig
-      uses: actions/download-artifact@v4
-      with:
-        name: kubeconfig
-
-
-    - name: Set Up Kubernetes Context
-      run: |
-        mkdir -p ~/.kube
-        mv kubeconfig ~/.kube/config
-        export KUBECONFIG=~/.kube/config
-
-    - name: Debug Kubernetes Context
-      run: |
-        kubectl config current-context || echo "No current context!"
-        kubectl cluster-info || echo "Cluster is not running!"
-        kubectl get nodes || echo "No nodes available!"
-        kubectl get pods -A || echo "No running pods!"
-
-    - name: Debug Image Tags
-      run: |
-        echo "SENSOR_IMAGE_TAG=${{ env.SENSOR_IMAGE_TAG }}"
-        echo "VERSIONING_IMAGE_TAG=${{ env.VERSIONING_IMAGE_TAG }}"
-
-    - name: Fail if Image Tags Are Empty
-      run: |
-        if [[ -z "${{ env.SENSOR_IMAGE_TAG }}" || -z "${{ env.VERSIONING_IMAGE_TAG }}" ]]; then
-          echo "Error: One or both image tags are missing!"
-          exit 1
-        fi
-
-    - name: Ensure KIND Cluster Exists
-      run: |
-        if ! kind get clusters | grep hivebox; then
-          echo "KIND cluster 'hivebox' not found! Creating..."
-          kind create cluster --name hivebox
+      - name: Save kubeconfig
+        run: |
+          mkdir -p ~/.kube
           kind export kubeconfig --name hivebox
-        else
-          echo "KIND cluster 'hivebox' already exists!"
-        fi
+          cat ~/.kube/config > kubeconfig
 
-    - name: Verify Kubernetes Context
-      run: |
-        export KUBECONFIG=~/.kube/config
-        kubectl config use-context kind-hivebox || echo "Failed to set context"
-
-     
-    - name: Apply Kubernetes Manifests
-      run: kubectl apply -f kubernetes/
-
-
-    - name: Restart deployments
-      run: |
-           kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }} --record
-           kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }} --record
-
-           kubectl rollout status deployment/hivebox-sensor-api
-           kubectl rollout status deployment/hivebox-basic-versioning
-
+      - name: Upload kubeconfig as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubeconfig
+          path: kubeconfig
