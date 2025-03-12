@@ -155,71 +155,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download kubeconfig
-        uses: actions/download-artifact@v4
-        with:
-          name: kubeconfig
-
-      - name: Set up Kubernetes Context
+      - name: Configure Kubeconfig
         run: |
-          mkdir -p ~/.kube
-          mv kubeconfig ~/.kube/config
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 --decode > ~/.kube/config
           export KUBECONFIG=~/.kube/config
-
-      - name: Debug Kubernetes Context
-        run: |
-          echo "Checking Kubernetes context..."
-          kubectl config current-context || echo "No current context!"
-          kubectl cluster-info || echo "Cluster is not running!"
-          kubectl get nodes || echo "No nodes available!"
-          kubectl get pods -A || echo "No running pods!"
-        
-      - name: Verify kubeconfig
-        run: |
-          echo "Checking kubeconfig..."
-          if [[ ! -f ~/.kube/config ]]; then
-            echo "Error: kubeconfig file is missing!"
-            exit 1
-          fi
-          kubectl config current-context || echo "No current context!"
-          kubectl cluster-info || echo "Cluster is not running!"
-          kubectl get nodes || echo "No nodes available!"
-
-      - name: Debug Image Tags
-        run: |
-          echo "Sensor API Image Tag: $SENSOR_IMAGE_TAG"
-          echo "Versioning API Image Tag: $VERSIONING_IMAGE_TAG"
-      
-      - name: Check KIND Cluster
-        run: |
-          if ! kind get clusters | grep hivebox; then
-            echo "KIND cluster 'hivebox' not found! Creating..."
-            kind create cluster --name hivebox
-            kind export kubeconfig --name hivebox
-          else
-            echo "KIND cluster 'hivebox' already exists!"
-          fi
-
-      - name: Ensure Kubernetes Context is Correct
-        run: |
-          export KUBECONFIG=~/.kube/config
-          kubectl config use-context kind-hivebox || echo "Failed to set context"
-
-      - name: Debug Kubernetes Manifests
-        run: kubectl apply --dry-run=client --validate=false -f kubernetes/
 
       - name: Apply Kubernetes Manifests
         run: kubectl apply -f kubernetes/
 
       - name: Restart deployments
         run: |
-          if [[ -z "$SENSOR_IMAGE_TAG" || -z "$VERSIONING_IMAGE_TAG" ]]; then
-            echo "Error: One or both image tags are missing!"
-            exit 1
-          fi
+          kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }} --record
+          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }} --record
 
-          kubectl set image deployment/hivebox-sensor-api sensor-api=${SENSOR_IMAGE_TAG} --record
-          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${VERSIONING_IMAGE_TAG} --record
-          
           kubectl rollout status deployment/hivebox-sensor-api
           kubectl rollout status deployment/hivebox-basic-versioning
