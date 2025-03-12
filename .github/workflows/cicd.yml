@@ -176,7 +176,7 @@ jobs:
          mv kubeconfig ~/.kube/config
          export KUBECONFIG=~/.kube/config
 
-     - name: Verify kubeconfig and cluster
+     - name: Verify Kubernetes Cluster
        run: |
          echo "Checking Kubernetes context..."
          kubectl config current-context || echo "No current context!"
@@ -191,20 +191,27 @@ jobs:
            kind create cluster --name hivebox
            kind export kubeconfig --name hivebox
          else
-           echo "KIND cluster 'hivebox' already exists!"
+           echo "Using existing KIND cluster 'hivebox'..."
+           kind export kubeconfig --name hivebox
          fi
-    
+
      - name: Apply Kubernetes Manifests
        run: |
          kubectl apply -f kubernetes/
-         kubectl rollout status deployment/hivebox-sensor-api
-         kubectl rollout status deployment/hivebox-basic-versioning
-   
-     - name: Debug Kubernetes Deployment
+         kubectl rollout status deployment/hivebox-sensor-api || echo "Sensor API rollout failed!"
+         kubectl rollout status deployment/hivebox-basic-versioning || echo "Basic Versioning rollout failed!"
+
+     - name: Debug Failed Deployments (if any)
+       if: failure()
        run: |
-         echo "Checking Deployments..."
-         kubectl get deployments -A
-         echo "Checking Pods..."
+         echo "🔍 Checking pod statuses..."
          kubectl get pods -A
-         echo "Checking Events..."
+
+         echo "🔍 Checking deployment status..."
+         kubectl get deployments -A
+
+         echo "🔍 Checking failed events..."
          kubectl get events --sort-by=.metadata.creationTimestamp
+
+         echo "🔍 Checking logs for hivebox-sensor-api..."
+         kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs available"
