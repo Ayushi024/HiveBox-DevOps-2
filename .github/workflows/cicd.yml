@@ -160,8 +160,6 @@ jobs:
           echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 --decode > ~/.kube/config
           export KUBECONFIG=~/.kube/config
 
-<<<<<<< HEAD
-=======
       - name: Debug Kubernetes Context
         run: |
           echo "Checking Kubernetes context..."
@@ -204,7 +202,6 @@ jobs:
       - name: Debug Kubernetes Manifests
         run: kubectl apply --dry-run=client --validate=false -f kubernetes/
 
->>>>>>> 2b3a42cc6515eeda926091d030d4f3dcfda85136
       - name: Apply Kubernetes Manifests
         run: kubectl apply -f kubernetes/
 
