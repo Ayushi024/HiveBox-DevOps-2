@@ -131,6 +131,7 @@ jobs:
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
 
+
       - name: Save kubeconfig
         run: |
           mkdir -p ~/.kube
