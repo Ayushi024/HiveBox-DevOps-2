@@ -78,7 +78,7 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
-    needs: [lint-test, secuirty-scan]
+    needs: [lint-test, security-scan]
     outputs:
       sensor_image_tag: ${{ steps.export-tags.outputs.sensor_image_tag }}
       versioning_image_tag: ${{ steps.export-tags.outputs.versioning_image_tag }}
