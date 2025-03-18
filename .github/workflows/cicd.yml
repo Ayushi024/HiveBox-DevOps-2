@@ -92,10 +92,18 @@ jobs:
 
       - name: Install Terrascan
         run: |
-         curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan_linux_amd64 -o terrascan
-         chmod +x terrascan
-         sudo mv terrascan /usr/local/bin/
+          curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan_linux_amd64.tar.gz -o terrascan.tar.gz
+          tar -xvf terrascan.tar.gz
+          chmod +x terrascan
+          sudo mv terrascan /usr/local/bin/
 
+      - name: Verify Terrascan Installation
+        run: |
+          terrascan version
+
+      - name: Run Terrascan Scan
+        run: |
+          terrascan scan -t k8s -d kubernetes/
 
       - name: Run Terrascan on Kubernetes Manifests
         run: terrascan scan -t k8s -d kubernetes/
