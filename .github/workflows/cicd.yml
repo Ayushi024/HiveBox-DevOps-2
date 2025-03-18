@@ -90,12 +90,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Terrascan
+      - name: Install Latest Terrascan
         run: |
-          curl -L https://github.com/tenable/terrascan/releases/latest/download/terrascan_linux_amd64.tar.gz -o terrascan.tar.gz
-          tar -xvf terrascan.tar.gz
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | jq -r '.tag_name')
+          curl -L https://github.com/tenable/terrascan/releases/download/$LATEST_VERSION/terrascan_linux_amd64.tar.gz -o terrascan.tar.gz
+          tar -xvzf terrascan.tar.gz
           chmod +x terrascan
           sudo mv terrascan /usr/local/bin/
+
+
+
 
       - name: Verify Terrascan Installation
         run: |
