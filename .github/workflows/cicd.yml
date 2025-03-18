@@ -57,6 +57,42 @@ jobs:
           curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
   
 
+  sonarqube:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Run SonarQube Analysis
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.projectKey=hivebox \
+            -Dsonar.organization=your-org \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+  
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Terrascan
+        run: |
+          curl -L https://github.com/accurics/terrascan/releases/download/v1.13.1/terrascan_linux_amd64 -o terrascan
+          chmod +x terrascan
+          sudo mv terrascan /usr/local/bin/
+
+      - name: Run Terrascan on Kubernetes Manifests
+        run: terrascan scan -t k8s -d kubernetes/
+
 
   docker-build:
     runs-on: ubuntu-latest
@@ -116,6 +152,21 @@ jobs:
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
+      
+
+      - name: Create KIND Cluster with Ingress-Nginx
+        run: |
+          cat <<EOF | kind create cluster --name hivebox --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 80
+                  hostPort: 80
+                - containerPort: 443
+                  hostPort: 443
+          EOF
 
       - name: Ensure KIND Cluster Exists
         run: |
@@ -125,6 +176,15 @@ jobs:
           else
             echo "KIND cluster 'hivebox' already exists!"
           fi
+       - name: Wait for Kubernetes to be Ready
+        run: |
+          kubectl cluster-info
+          kubectl wait --namespace kube-system --for=condition=ready pod --selector=k8s-app=kube-dns --timeout=90s
+
+      - name: Deploy Ingress-Nginx
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
 
       - name: Set Kubernetes Context
         run: kind export kubeconfig --name hivebox
@@ -138,42 +198,55 @@ jobs:
           kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
-
-      - name: Debug Kubernetes Deployment (Staging)
+      
+      - name: Verify Deployment
         run: |
-          echo " Checking cluster status..." 
+          echo "Checking cluster status..." 
           kubectl get nodes
           kubectl get pods -A
           kubectl get deployments -A
-          echo " Checking event logs..." 
+          echo "Checking event logs..." 
           kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
-          echo " Describing failed deployments..." 
+          echo "Describing failed deployments..." 
           kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
           kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
-          echo " Checking logs of failing pods..."
-          kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs found for hivebox-sensor-api"
-          kubectl logs -l app=hivebox-basic-versioning --tail=50 || echo "No logs found for hivebox-basic-versioning"
 
-      - name: Save kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          kind export kubeconfig --name hivebox
-          cat ~/.kube/config > kubeconfig
+          
+      # - name: Debug Kubernetes Deployment (Staging)
+      #   run: |
+      #     echo " Checking cluster status..." 
+      #     kubectl get nodes
+      #     kubectl get pods -A
+      #     kubectl get deployments -A
+      #     echo " Checking event logs..." 
+      #     kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
+      #     echo " Describing failed deployments..." 
+      #     kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
+      #     kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
+      #     echo " Checking logs of failing pods..."
+      #     kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs found for hivebox-sensor-api"
+      #     kubectl logs -l app=hivebox-basic-versioning --tail=50 || echo "No logs found for hivebox-basic-versioning"
 
-      - name: Upload kubeconfig as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubeconfig
-          path: kubeconfig
+      # - name: Save kubeconfig
+      #   run: |
+      #     mkdir -p ~/.kube
+      #     kind export kubeconfig --name hivebox
+      #     cat ~/.kube/config > kubeconfig
+
+      # - name: Upload kubeconfig as artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: kubeconfig
+      #     path: kubeconfig
      
-      - name: Debug Kubernetes Deployment
-        run: |
-         echo "Checking Deployments..."
-         kubectl get deployments -A
-         echo "Checking Pods..."
-         kubectl get pods -A
-         echo "Checking Events..."
-         kubectl get events --sort-by=.metadata.creationTimestamp
+      # - name: Debug Kubernetes Deployment
+      #   run: |
+      #    echo "Checking Deployments..."
+      #    kubectl get deployments -A
+      #    echo "Checking Pods..."
+      #    kubectl get pods -A
+      #    echo "Checking Events..."
+      #    kubectl get events --sort-by=.metadata.creationTimestamp
 
 
  
