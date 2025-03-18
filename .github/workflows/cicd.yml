@@ -94,13 +94,13 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Download and Install Terrascan
+      - name: Install Terrascan
         run: |
-          curl -L "https://github.com/tenable/terrascan/releases/download/v1.19.9/terrascan_linux_amd64.tar.gz" -o terrascan.tar.gz
-          tar -xvzf terrascan.tar.gz
-          chmod +x terrascan
-          sudo mv terrascan /usr/local/bin/
-
+         LATEST_VERSION=$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | jq -r '.tag_name')
+         curl -L "https://github.com/tenable/terrascan/releases/download/${LATEST_VERSION}/terrascan_linux_amd64" -o terrascan
+         chmod +x terrascan
+         sudo mv terrascan /usr/local/bin/
+         terrascan version
 
       - name: Verify Terrascan Installation
         run: |
