@@ -15,10 +15,10 @@ spec:
         app: sensor-api
     spec:
       securityContext:
-        runAsNonRoot: true                       # Run as non-root user
-        runAsUser: 1000                          # Set UID for container
+        runAsNonRoot: true                       # 
+        runAsUser: 1000                          # 
         seccompProfile:
-          type: RuntimeDefault                   # Enable default seccomp profile
+          type: RuntimeDefault                   # 
       containers:
         - name: sensor-api
           image: ghcr.io/ayushi024/hivebox-sensor-api@sha256:<digest>  # Use digest instead of latest
