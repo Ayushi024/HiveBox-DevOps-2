@@ -63,19 +63,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Run SonarQube Analysis
+      - name: Install Sonar Scanner
         run: |
-          mvn clean verify sonar:sonar \
+          curl -Lo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+          unzip sonar-scanner.zip
+          sudo mv sonar-scanner-5.0.1.3006-linux /usr/local/sonar-scanner
+          export PATH="/usr/local/sonar-scanner/bin:$PATH"
+
+      - name: Run SonarQube Analysis for Python
+        run: |
+          /usr/local/sonar-scanner/bin/sonar-scanner \
             -Dsonar.projectKey=hivebox \
             -Dsonar.organization=your-org \
+            -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.python.version=3 \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
 
   
     # ✅ Terrascan Security Scan
