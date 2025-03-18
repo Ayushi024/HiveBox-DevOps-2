@@ -73,12 +73,13 @@ jobs:
       - name: Run SonarQube Analysis for Python
         run: |
           /usr/local/sonar-scanner/bin/sonar-scanner \
-            -Dsonar.projectKey=hivebox \
-            -Dsonar.organization=your-org \
+            -Dsonar.projectKey=HiveBox-DevOps-2 \
+            -Dsonar.organization=hivebox-org \
             -Dsonar.sources=. \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.python.version=3 \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
 
 
   
