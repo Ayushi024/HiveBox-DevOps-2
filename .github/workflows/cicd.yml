@@ -111,8 +111,8 @@ jobs:
       #   run: |
       #     terrascan scan -t k8s -d kubernetes/
 
-      # - name: Run Terrascan on Kubernetes Manifests
-      #   run: terrascan scan -t k8s -d kubernetes/
+      - name: Run Terrascan on Kubernetes Manifests
+        run: terrascan scan -t k8s -d kubernetes/
 
 
   docker-build:
