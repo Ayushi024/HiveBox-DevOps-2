@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hivebox-sensor-api 
+  name: hivebox-sensor-api
   labels:
     app: sensor-api
 spec:
@@ -14,11 +14,22 @@ spec:
       labels:
         app: sensor-api
     spec:
+      securityContext:
+        runAsNonRoot: true                       # Run as non-root user
+        runAsUser: 1000                          # Set UID for container
+        seccompProfile:
+          type: RuntimeDefault                   # Enable default seccomp profile
       containers:
-        - name: sensor-api  
-          image: ghcr.io/ayushi024/hivebox-sensor-api:latest  
+        - name: sensor-api
+          image: ghcr.io/ayushi024/hivebox-sensor-api@sha256:<digest>  # Use digest instead of latest
           ports:
             - containerPort: 5000
+          securityContext:
+            allowPrivilegeEscalation: false     # Disallow privilege escalation
+            capabilities:
+              drop:
+                - ALL                          # Drop all unnecessary capabilities
+            readOnlyRootFilesystem: true        # Set root filesystem as read-only
           env:
             - name: OPENWEATHER_API_KEY
               valueFrom:
@@ -49,6 +60,7 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -66,11 +78,22 @@ spec:
       labels:
         app: basic-versioning
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: basic-versioning
-          image: ghcr.io/ayushi024/hivebox-basic-versioning:latest
+          image: ghcr.io/ayushi024/hivebox-basic-versioning@sha256:<digest>  # Use digest instead of latest
           ports:
             - containerPort: 5001
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
           livenessProbe:
             httpGet:
               path: /health
