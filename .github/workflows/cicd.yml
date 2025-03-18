@@ -179,7 +179,7 @@ jobs:
           else
             echo "KIND cluster 'hivebox' already exists!"
           fi
-       - name: Wait for Kubernetes to be Ready
+      - name: Wait for Kubernetes to be Ready
         run: |
           kubectl cluster-info
           kubectl wait --namespace kube-system --for=condition=ready pod --selector=k8s-app=kube-dns --timeout=90s
