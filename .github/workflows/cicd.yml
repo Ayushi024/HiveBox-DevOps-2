@@ -96,10 +96,12 @@ jobs:
 
       - name: Install Terrascan
         run: |
-          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Darwin_x86_64.tar.gz")terrascan.tar.gz
-          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
-          install terrascan /usr/local/bin && rm terrascan
-          terrascan
+         LATEST_VERSION=$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | jq -r '.tag_name')
+         curl -L "https://github.com/tenable/terrascan/releases/download/$LATEST_VERSION/terrascan_linux_amd64" -o terrascan
+         chmod +x terrascan
+         sudo mv terrascan /usr/local/bin/
+         terrascan version
+
 
       - name: Verify Terrascan Installation
         run: |
