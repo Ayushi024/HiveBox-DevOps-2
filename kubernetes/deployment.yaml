@@ -15,32 +15,25 @@ spec:
         app: sensor-api
     spec:
       securityContext:
-        runAsNonRoot: true                       # 
-        runAsUser: 1000                          # 
+        runAsNonRoot: true
+        runAsUser: 1000
         seccompProfile:
-          type: RuntimeDefault                   # 
+          type: RuntimeDefault
       containers:
         - name: sensor-api
-          image: ghcr.io/ayushi024/hivebox-sensor-api@sha256:<digest>  # Use digest instead of latest
+          image: ghcr.io/ayushi024/hivebox-sensor-api@sha256:<digest>  # Replace <digest> with actual digest
           ports:
             - containerPort: 5000
           securityContext:
-            allowPrivilegeEscalation: false     # Disallow privilege escalation
+            allowPrivilegeEscalation: false
             capabilities:
               drop:
-                - ALL                          # Drop all unnecessary capabilities
-            readOnlyRootFilesystem: true        # Set root filesystem as read-only
-          env:
-            - name: OPENWEATHER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openweather-secret
-                  key: API_KEY
-            - name: SENSEBOX_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: sensor-config
-                  key: SENSEBOX_ID
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: openweather-secret-volume
+              mountPath: /etc/secrets
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health
@@ -60,6 +53,10 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
+      volumes:
+        - name: openweather-secret-volume
+          secret:
+            secretName: openweather-secret
 
 ---
 apiVersion: apps/v1
