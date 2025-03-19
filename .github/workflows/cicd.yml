@@ -116,9 +116,6 @@ jobs:
 
 
 
-
-
-
   docker-build:
     runs-on: ubuntu-latest
     needs: [lint-test, security-scan]
@@ -201,6 +198,7 @@ jobs:
           else
             echo "KIND cluster 'hivebox' already exists!"
           fi
+
       - name: Wait for Kubernetes to be Ready
         run: |
           kubectl cluster-info
@@ -216,7 +214,13 @@ jobs:
 
       - name: Apply Kubernetes Manifests
         run: kubectl apply -f kubernetes/
-
+      
+      - name: Create TLS Secret in Kubernetes
+        run: |
+          echo "${{ secrets.TLS_CERT }}" > cert.crt
+          echo "${{ secrets.TLS_KEY }}" > cert.key
+          kubectl create secret tls tls-secret --cert=cert.crt --key=cert.key --dry-run=client -o yaml | kubectl apply -f -
+          
       - name: Restart Deployments
         run: |
           kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
@@ -236,7 +240,13 @@ jobs:
           kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
           kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
 
-          
+      - name: Debug Kubeconfig and TLS Secret
+        run: |
+          echo "Verifying kubeconfig..."
+          kubectl config view
+          echo "Checking TLS secret..."
+          kubectl get secret tls-secret -o yaml
+   
       # - name: Debug Kubernetes Deployment (Staging)
       #   run: |
       #     echo " Checking cluster status..." 

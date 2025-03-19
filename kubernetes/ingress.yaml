@@ -3,20 +3,19 @@ kind: Ingress
 metadata:
   name: hivebox-sensor-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /  # Correct path rewrites
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS
-    nginx.ingress.kubernetes.io/hsts: "true"  # Enable HTTP Strict Transport Security
-    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"  # 1 year HSTS duration
+    nginx.ingress.kubernetes.io/rewrite-target: /  
+    nginx.ingress.kubernetes.io/ssl-redirect: "true" 
+    nginx.ingress.kubernetes.io/hsts: "true"  
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"  
     nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
     nginx.ingress.kubernetes.io/hsts-preload: "true"
-    kubernetes.io/tls-acme: "true"  # Auto-generate certificates with cert-manager
-
+    kubernetes.io/tls-acme: "true" 
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - hivebox.local
-      secretName: tls-secret  # Ensure tls-secret is created properly
+      secretName: tls-secret 
   rules:
     - host: hivebox.local
       http:
