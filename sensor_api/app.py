@@ -16,13 +16,9 @@ def temperature():
 
         city = "London"
         url = (
-        f"http://api.openweathermap.org/data/2.5/weather?q={city}"
-        f"&appid={api_key}&units=metric"
-)
-
-
-        # Debugging URL (Optional)
-        print(f"Requesting URL: {url}")
+            f"http://api.openweathermap.org/data/2.5/weather?q={city}"
+            f"&appid={api_key}&units=metric"
+        )
 
         response = requests.get(url)
 
