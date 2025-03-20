@@ -15,7 +15,11 @@ def temperature():
             return jsonify({"error": "API key is missing or not set"}), 500
 
         city = "London"
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+        url = (
+        f"http://api.openweathermap.org/data/2.5/weather?q={city}"
+        f"&appid={api_key}&units=metric"
+)
+
 
         # Debugging URL (Optional)
         print(f"Requesting URL: {url}")
