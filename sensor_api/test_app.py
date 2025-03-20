@@ -26,6 +26,4 @@ class TestSensorAPI(unittest.TestCase):
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 500)
         self.assertIn("error", response.json)
-        self.assertEqual(
-            response.json["error"], "API key is missing or not set"
-        )  
+        self.assertEqual(response.json["error"], "API key is missing or not set")
