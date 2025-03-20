@@ -3,9 +3,10 @@ from unittest.mock import patch, Mock
 import requests
 from sensor_api.app import get_temperature
 
+
 class TestTemperatureMock(unittest.TestCase):
     """Test temperature endpoint with mocked API response."""
-    
+
     @patch("requests.get")
     def test_temperature_status_mock(self, mock_get):
         """Mock external temperature API response and check status"""
@@ -36,6 +37,7 @@ class TestTemperatureMock(unittest.TestCase):
         response, status_code = get_temperature()
         self.assertEqual(status_code, 500)
         self.assertIn("error", response.get_json())
+
 
 if __name__ == "__main__":
     unittest.main()
