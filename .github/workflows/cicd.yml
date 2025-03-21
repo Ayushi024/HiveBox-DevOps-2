@@ -89,7 +89,7 @@ jobs:
 # ---------------------
   update-manifests:
     runs-on: ubuntu-latest
-    needs: [docker-build, security-scan]
+    needs: [docker-build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -125,7 +125,7 @@ jobs:
 # ---------------------
   security-scan:
     runs-on: ubuntu-latest
-    needs: [lint-test,docker-build]
+    needs: [update-manifests]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
