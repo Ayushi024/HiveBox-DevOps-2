@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hivebox-sensor-api
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/sensor-api: runtime/default
   labels:
     app: sensor-api
 spec:
@@ -67,6 +69,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hivebox-basic-versioning
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/basic-versioning: runtime/default
   labels:
     app: basic-versioning
 spec:
