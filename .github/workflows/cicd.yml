@@ -8,6 +8,7 @@ on:
     branches:
       - main
 
+
 jobs:
   lint-test:
     runs-on: ubuntu-latest
@@ -30,11 +31,6 @@ jobs:
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
-      - name: Set Environment Variables
-        run: |
-          echo "OPENWEATHER_API_KEY=${{ secrets.OPENWEATHER_API_KEY }}" >> $GITHUB_ENV
-          echo "APP_VERSION=v1.0.0" >> $GITHUB_ENV
-
       - name: Start APIs (Run in Background)
         run: |
           python sensor_api/app.py --host=0.0.0.0 --port=5000 & 
@@ -45,17 +41,15 @@ jobs:
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
 
-      - name: Test network connectivity to OpenWeather API
-        run: |
-          echo "Checking OpenWeather API key presence: ${{ secrets.OPENWEATHER_API_KEY != '' }}"
-          curl -I "https://api.openweathermap.org/data/2.5/weather?q=London&appid=$OPENWEATHER_API_KEY"
-
+# ---------------------
+# Docker Build and Digest Generation
+# ---------------------
   docker-build:
     runs-on: ubuntu-latest
     needs: [lint-test]
     outputs:
-      sensor_image_tag: ${{ steps.export-tags.outputs.sensor_image_tag }}
-      versioning_image_tag: ${{ steps.export-tags.outputs.versioning_image_tag }}
+      sensor_image_digest: ${{ steps.sensor-digest.outputs.digest }}
+      versioning_image_digest: ${{ steps.versioning-digest.outputs.digest }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -63,36 +57,110 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker images
-        id: export-tags
+      - name: Build and Push Docker Images
         run: |
-         SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
-         VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
+          SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
+          VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
 
-         echo "SENSOR_IMAGE_TAG=$SENSOR_IMAGE_TAG"
-         echo "VERSIONING_IMAGE_TAG=$VERSIONING_IMAGE_TAG"
+          # Build and push images
+          docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
+          docker push $SENSOR_IMAGE_TAG
 
-         docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
-         docker push $SENSOR_IMAGE_TAG
+          docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
+          docker push $VERSIONING_IMAGE_TAG
 
-         docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
-         docker push $VERSIONING_IMAGE_TAG
-
-         echo "sensor_image_tag=$SENSOR_IMAGE_TAG" >> $GITHUB_OUTPUT
-         echo "versioning_image_tag=$VERSIONING_IMAGE_TAG" >> $GITHUB_OUTPUT
-      
-      - name: Debug Outputs
+      - name: Get Sensor API Image Digest
+        id: sensor-digest
         run: |
-         echo "Sensor API Image Tag Output: ${{ steps.export-tags.outputs.sensor_image_tag }}"
-         echo "Versioning API Image Tag Output: ${{ steps.export-tags.outputs.versioning_image_tag }}"
+          SENSOR_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD))
+          echo "digest=${SENSOR_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
-  deploy-staging:
+      - name: Get Basic Versioning Image Digest
+        id: versioning-digest
+        run: |
+          VERSIONING_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD))
+          echo "digest=${VERSIONING_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
+
+
+# ---------------------
+# Update Kubernetes Manifests with Digests
+# ---------------------
+  update-manifests:
     runs-on: ubuntu-latest
     needs: docker-build
+    permissions:
+      contents: write  # <-- Add this permission
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Fetch entire history to allow pushing changes
+
+      - name: Switch to main branch
+        run: |
+          git fetch origin main
+          git checkout -b update-image-digests
+
+      - name: Install yq for YAML Manipulation
+        run: |
+          curl -sL https://github.com/mikefarah/yq/releases/download/v4.24.5/yq_linux_amd64 -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Update Kubernetes Manifests with Digests
+        run: |
+          yq e '.spec.template.spec.containers[0].image = "ghcr.io/ayushi024/hivebox-sensor-api@${{ needs.docker-build.outputs.sensor_image_digest }}"' -i kubernetes/deployment.yaml
+          yq e '.spec.template.spec.containers[0].image = "ghcr.io/ayushi024/hivebox-basic-versioning@${{ needs.docker-build.outputs.versioning_image_digest }}"' -i kubernetes/deployment.yaml
+
+      - name: Commit and Push Updated Manifests
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add kubernetes/deployment.yaml
+          git commit -m "Update Kubernetes manifests with image digests"
+          git push origin update-image-digests
+       
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-image-digests
+          base: main
+          title: "Update Kubernetes manifests with image digests"
+          body: |
+            This PR updates the Kubernetes manifests with the latest image digests.
+          labels: |
+            auto-update
+
+
+# ---------------------
+# Security Scan with Terrascan (Run BEFORE update-manifests)
+# ---------------------
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [update-manifests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Terrascan
+        run: |
+          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
+          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
+          install terrascan /usr/local/bin && rm terrascan
+
+      # - name: Run Terrascan on Kubernetes Manifests
+      #   run: terrascan scan --iac-type k8s --iac-dir kubernetes/
+
+
+# ---------------------
+# Deploy to Staging
+# ---------------------
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: update-manifests
     environment: staging
-    env:
-      SENSOR_IMAGE_TAG: ${{ needs.docker-build.outputs.sensor_image_tag }}
-      VERSIONING_IMAGE_TAG: ${{ needs.docker-build.outputs.versioning_image_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,63 +177,29 @@ jobs:
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
 
-      - name: Ensure KIND Cluster Exists
+      - name: Create KIND Cluster with Ingress-Nginx
         run: |
-          if ! kind get clusters | grep -q "hivebox"; then
-            echo "KIND cluster 'hivebox' not found! Creating..."
-            kind create cluster --name hivebox
-          else
-            echo "KIND cluster 'hivebox' already exists!"
-          fi
-
-      - name: Set Kubernetes Context
-        run: kind export kubeconfig --name hivebox
+          cat <<EOF | kind create cluster --name hivebox --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+            - role: control-plane
+              extraPortMappings:
+                - containerPort: 80
+                  hostPort: 80
+                - containerPort: 443
+                  hostPort: 443
+          EOF
 
       - name: Apply Kubernetes Manifests
         run: kubectl apply -f kubernetes/
 
       - name: Restart Deployments
         run: |
-          kubectl set image deployment/hivebox-sensor-api sensor-api=${{ env.SENSOR_IMAGE_TAG }}
-          kubectl set image deployment/hivebox-basic-versioning basic-versioning=${{ env.VERSIONING_IMAGE_TAG }}
           kubectl rollout restart deployment/hivebox-sensor-api
           kubectl rollout restart deployment/hivebox-basic-versioning
 
-      - name: Debug Kubernetes Deployment (Staging)
+      - name: Verify Deployment Status
         run: |
-          echo " Checking cluster status..." 
-          kubectl get nodes
-          kubectl get pods -A
           kubectl get deployments -A
-          echo " Checking event logs..." 
-          kubectl get events --sort-by=.metadata.creationTimestamp | tail -20
-          echo " Describing failed deployments..." 
-          kubectl describe deployment hivebox-sensor-api || echo "No details found for hivebox-sensor-api"
-          kubectl describe deployment hivebox-basic-versioning || echo "No details found for hivebox-basic-versioning"
-          echo " Checking logs of failing pods..."
-          kubectl logs -l app=hivebox-sensor-api --tail=50 || echo "No logs found for hivebox-sensor-api"
-          kubectl logs -l app=hivebox-basic-versioning --tail=50 || echo "No logs found for hivebox-basic-versioning"
-
-      - name: Save kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          kind export kubeconfig --name hivebox
-          cat ~/.kube/config > kubeconfig
-
-      - name: Upload kubeconfig as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kubeconfig
-          path: kubeconfig
-     
-      - name: Debug Kubernetes Deployment
-        run: |
-         echo "Checking Deployments..."
-         kubectl get deployments -A
-         echo "Checking Pods..."
-         kubectl get pods -A
-         echo "Checking Events..."
-         kubectl get events --sort-by=.metadata.creationTimestamp
-
-
- 
+          kubectl get pods -A

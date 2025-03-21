@@ -1,0 +1,278 @@
+[33mcommit 4116f980c35d1b144bb3ce0c3805ba4861dccbe6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature-branch[m[33m)[m
+Merge: 47adee0 7e0d917
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:59:25 2025 +0530
+
+    Merge branch 'feature-branch' of https://github.com/Ayushi024/HiveBox-DevOps-2 into feature-branch
+
+[33mcommit 47adee05124fc87f9abd19cc00525c81bd485242[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:59:15 2025 +0530
+
+    updated
+
+[33mcommit 7e0d917d5c5ffb9ba26b8acfd0d94b03ab825d5b[m[33m ([m[1;31morigin/feature-branch[m[33m)[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Tue Mar 18 19:51:38 2025 +0530
+
+    Update scorecard.yml
+
+[33mcommit ccbfa2b9fc507b74a1cd3dfba402f623311f5abb[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Tue Mar 18 19:51:20 2025 +0530
+
+    Update scorecard.yml
+
+[33mcommit 2823324267e1a49f8d18be0dcd9566bdd828a926[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:49:51 2025 +0530
+
+    updated
+
+[33mcommit a3aa0358ebbc4e9d7faa881d1544afeab2ee02e5[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:40:27 2025 +0530
+
+    fixed terrascan
+
+[33mcommit ca0f3933ddf01928b9ff1d637ba8f5ceb99d4b82[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:38:21 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 3632873b0001a6ef681b8ea12d0649e9ef8d8da2[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:37:39 2025 +0530
+
+    fixed terrascan
+
+[33mcommit fd4b28ad383330c6593d916f6bd17c7716ae90a9[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:35:25 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 37cef09df4d0db86f77d6555fbced64f219dbf6a[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:34:31 2025 +0530
+
+    fixed terrascan
+
+[33mcommit ab90e321adda28aa88e5cf343d9717c0399088c2[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 19:33:39 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 848bc7334c8b8d6852972cff3e5c7a64648a21c2[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:21:12 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 4494a3a43f1b8fe14d88b9d5ec7845dfa7eca11e[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:19:26 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 1535c721598cc4d1d02c16519a579eea19096b8f[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:16:51 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 0ab688dd48bb9dbdfe81ce8b18805551e9f75e9c[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:11:31 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 8b67e06fec69f07aef6d9af5b71687f116034882[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:08:23 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 7a87a517be92905d186eacb0a23aa3916645baf0[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 17:03:32 2025 +0530
+
+    fixed terrascan
+
+[33mcommit c98a695124d4a4ed57fc36c07c208d2277ce2d84[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 15:59:40 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 74785d039cac3b4c95bad66b1e056b874a6564c5[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 15:56:46 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 2a671ec9d655974864eb3d3d35e9cfba8de38d08[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 15:54:27 2025 +0530
+
+    fixed terrascan
+
+[33mcommit 77e25c40bce6efc39bc4abcd652acb237b9f72ed[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 15:38:21 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit ed352e3a9d573933dd7d08c325842db61925f9f9[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 14:34:36 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit d4caf95f435c02b3a2485d44fa24417a7c4d9d11[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 14:30:13 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit 9487ee001053526779ab11157c923419affdbb4f[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 14:20:08 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit 5967910313e395cb528ad18452cfb92180b16aa8[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 14:08:00 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit da7cf458f6853e93c74a92239afd18985ade90cf[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 13:49:37 2025 +0530
+
+    fixed sonarQube
+
+[33mcommit 536b3da2f89419f50860f27edbc5c53fe21787a0[m
+Merge: 83565d4 e347e2b
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 13:20:12 2025 +0530
+
+    Merge branch 'feature-branch' of https://github.com/Ayushi024/HiveBox-DevOps-2 into feature-branch
+
+[33mcommit 83565d48f40c2180c812fbcb14575720fecbe715[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 13:18:59 2025 +0530
+
+    fixed terrascen installation
+
+[33mcommit e347e2bd5990ccf6fce02713e83c098b97937d99[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Tue Mar 18 13:08:56 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit 417e741cb89b11dc1b5764828a55c1612842d1e9[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Tue Mar 18 13:08:03 2025 +0530
+
+    updated
+
+[33mcommit ca2b4c3854f91d7209f2ba2d15c22621342f589b[m
+Merge: 6614e3c 8c91fa6
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Mon Mar 17 15:04:48 2025 +0530
+
+    Merge branch 'main' of https://github.com/Ayushi024/HiveBox-DevOps-2 into feature-branch
+
+[33mcommit 6614e3c3868ff7d376ee505c2669f7217994953c[m
+Merge: 75d0f35 4abeb19
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Mon Mar 17 14:50:33 2025 +0530
+
+    Merge branch 'feature-branch' of https://github.com/Ayushi024/HiveBox-DevOps-2 into feature-branch
+
+[33mcommit 75d0f353ba7713a4464305bcfb8e08230a841858[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Mon Mar 17 14:50:20 2025 +0530
+
+    updated
+
+[33mcommit 8c91fa6a37504bfe498661d536935899206e68a3[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Mon Mar 17 14:45:17 2025 +0530
+
+    Create scorecard.yml
+
+[33mcommit 4abeb19aca1117a166b4353c3c806a8f89bd8294[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Mon Mar 17 14:14:56 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit ca27d92ff77bac01038a7ff4b3d314b69bada9f7[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Mon Mar 17 14:13:08 2025 +0530
+
+    updated
+
+[33mcommit 4032430772e7f055b00e20252a34fd1fd183d1a1[m[33m ([m[1;32mmain[m[33m)[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 21:32:22 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit f0c51f0d9be5c56977e2b14c03a945a9fb28a05e[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 21:23:42 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit 764707fbee52666f441fe9c2ecc19f77e6606fc2[m
+Merge: a8415a0 3b6308d
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Wed Mar 12 21:20:04 2025 +0530
+
+    updated
+
+[33mcommit a8415a04e5a9d253f1c3f4fc5f4bb4ef074e4664[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Wed Mar 12 21:18:32 2025 +0530
+
+    updated
+
+[33mcommit 3b6308d56af511a7f309a98d2687928d049da9dc[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 20:53:12 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit a413512c337478bd00cdabbe872c68a7fc061ddc[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 20:10:15 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit 0805b968dc9e28a072e904f5f023d1287fdaa680[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 19:52:36 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit 1aa5076a330f61b9e556688295705a5a42270ba5[m
+Author: Ayushi Panwar <112766841+Ayushi024@users.noreply.github.com>
+Date:   Wed Mar 12 19:51:12 2025 +0530
+
+    Update cicd.yml
+
+[33mcommit 950fe23ff42de69c6f948b189107efb2f8df9db7[m
+Author: Ayushi Panwar <ayushi982@gmail.com>
+Date:   Wed Mar 12 19:49:44 2025 +0530
+
+    updated
+
+[33mcommit dc297f417daf531be799c8d8c288c3b0a5df91a1[m
+Merge: a5d7bae e09ca16
+Author: Ayushi Panwar <ayushi982@gmail.c

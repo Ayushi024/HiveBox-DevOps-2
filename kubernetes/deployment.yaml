@@ -1,7 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hivebox-sensor-api 
+  name: hivebox-sensor-api
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/sensor-api: runtime/default
   labels:
     app: sensor-api
 spec:
@@ -14,22 +16,30 @@ spec:
       labels:
         app: sensor-api
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: sensor-api  
-          image: ghcr.io/ayushi024/hivebox-sensor-api:latest  
+        - name: sensor-api
+          image: ghcr.io/ayushi024/hivebox-sensor-api@<DIGEST_PLACEHOLDER> # Replace <digest> with actual digest
           ports:
             - containerPort: 5000
-          env:
-            - name: OPENWEATHER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: openweather-secret
-                  key: API_KEY
-            - name: SENSEBOX_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: sensor-config
-                  key: SENSEBOX_ID
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: openweather-secret-volume
+              mountPath: /etc/secrets
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health
@@ -49,11 +59,18 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "250m"
+      volumes:
+        - name: openweather-secret-volume
+          secret:
+            secretName: openweather-secret
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hivebox-basic-versioning
+  annotations:
+    container.apparmor.security.beta.kubernetes.io/basic-versioning: runtime/default
   labels:
     app: basic-versioning
 spec:
@@ -66,11 +83,26 @@ spec:
       labels:
         app: basic-versioning
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: basic-versioning
-          image: ghcr.io/ayushi024/hivebox-basic-versioning:latest
+          image: ghcr.io/ayushi024/hivebox-basic-versioning@<DIGEST_PLACEHOLDER> # Replace <digest> with actual digest
           ports:
             - containerPort: 5001
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
           livenessProbe:
             httpGet:
               path: /health
