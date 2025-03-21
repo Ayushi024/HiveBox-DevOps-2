@@ -21,7 +21,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sensor-api
-          image: ghcr.io/ayushi024/hivebox-sensor-api@sha256:<digest>  # Replace <digest> with actual digest
+          image: ghcr.io/ayushi024/hivebox-sensor-api@<DIGEST_PLACEHOLDER> # Replace <digest> with actual digest
           ports:
             - containerPort: 5000
           securityContext:
@@ -86,7 +86,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: basic-versioning
-          image: ghcr.io/ayushi024/hivebox-basic-versioning@sha256:<digest>  # Replace <digest> with actual digest
+          image: ghcr.io/ayushi024/hivebox-basic-versioning@<DIGEST_PLACEHOLDER> # Replace <digest> with actual digest
           ports:
             - containerPort: 5001
           securityContext:
