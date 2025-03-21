@@ -9,9 +9,6 @@ on:
       - main
 
 # ---------------------
-# Lint and Unit Tests
-# ---------------------
-# ---------------------
 # Lint and Unit Tests with MinIO
 # ---------------------
 jobs:
@@ -31,8 +28,8 @@ jobs:
           -v /data:/data
           -v /config:/root/.minio
           -d
-        entrypoint: sh -c 'mkdir -p /data/test-bucket && minio server /data --console-address ":9001"'
-    
+        entrypoint: sh -c 'minio server /data --console-address ":9001"'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,19 +52,25 @@ jobs:
             curl -s http://localhost:9000/minio/health/live && break || sleep 3
           done || exit 1
 
+      - name: Configure MinIO Bucket
+        run: |
+          curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          ./mc alias set myminio http://localhost:9000 minioadmin minioadmin
+          ./mc mb myminio/test-bucket || true
+
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
       - name: Start APIs (Run in Background)
         run: |
-          python sensor_api/app.py --host=0.0.0.0 --port=5000 & 
-          python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 & 
+          python sensor_api/app.py --host=0.0.0.0 --port=5000 &
+          python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 &
           sleep 5
 
       - name: Run unit tests
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
-
 
 # ---------------------
 # Docker Build and Digest Generation
@@ -100,13 +103,15 @@ jobs:
       - name: Get Sensor API Image Digest
         id: sensor-digest
         run: |
-          SENSOR_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD))
+          docker pull $SENSOR_IMAGE_TAG
+          SENSOR_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $SENSOR_IMAGE_TAG)
           echo "digest=${SENSOR_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
       - name: Get Basic Versioning Image Digest
         id: versioning-digest
         run: |
-          VERSIONING_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD))
+          docker pull $VERSIONING_IMAGE_TAG
+          VERSIONING_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $VERSIONING_IMAGE_TAG)
           echo "digest=${VERSIONING_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
 # ---------------------
@@ -137,8 +142,8 @@ jobs:
 
       - name: Update Kubernetes Manifests with Digests
         run: |
-          yq e '.spec.template.spec.containers[0].image = "ghcr.io/ayushi024/hivebox-sensor-api@${{ needs.docker-build.outputs.sensor_image_digest }}"' -i kubernetes/deployment.yaml
-          yq e '.spec.template.spec.containers[1].image = "ghcr.io/ayushi024/hivebox-basic-versioning@${{ needs.docker-build.outputs.versioning_image_digest }}"' -i kubernetes/deployment.yaml
+          yq e '(.spec.template.spec.containers[] | select(.name == "sensor-api")).image = "ghcr.io/ayushi024/hivebox-sensor-api@${{ needs.docker-build.outputs.sensor_image_digest }}"' -i kubernetes/deployment.yaml
+          yq e '(.spec.template.spec.containers[] | select(.name == "basic-versioning")).image = "ghcr.io/ayushi024/hivebox-basic-versioning@${{ needs.docker-build.outputs.versioning_image_digest }}"' -i kubernetes/deployment.yaml
 
       - name: Commit and Push Updated Manifests
         run: |
@@ -172,9 +177,10 @@ jobs:
 
       - name: Install Terrascan
         run: |
-          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
-          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
-          install terrascan /usr/local/bin && rm terrascan
+          curl -L https://github.com/tenable/terrascan/releases/download/v1.16.0/terrascan_1.16.0_Linux_x86_64.tar.gz -o terrascan.tar.gz
+          tar -xzf terrascan.tar.gz
+          mv terrascan /usr/local/bin/
+          rm -f terrascan.tar.gz
 
       - name: Run Terrascan on Kubernetes Manifests
         run: terrascan scan --iac-type k8s --iac-dir kubernetes/
