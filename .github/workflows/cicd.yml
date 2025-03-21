@@ -30,9 +30,9 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-          --entrypoint sh minio/minio
-          -c 'mkdir -p /data/test-bucket && /usr/bin/minio server /data --console-address ":9001"'
-
+          -d
+        entrypoint: sh -c 'mkdir -p /data/test-bucket && minio server /data --console-address ":9001"'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,9 +49,11 @@ jobs:
           pip install -r basic_versioning/requirements.txt
           pip install flake8 pytest redis minio
 
-      - name: Check if MinIO is running
+      - name: Wait for MinIO to be ready
         run: |
-          curl --retry 5 --retry-delay 3 -s http://localhost:9000/minio/health/live || exit 1
+          for i in {1..5}; do
+            curl -s http://localhost:9000/minio/health/live && break || sleep 3
+          done || exit 1
 
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
