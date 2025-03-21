@@ -90,6 +90,7 @@ jobs:
     needs: docker-build
     permissions:
       contents: write  # <-- Add this permission
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -100,7 +101,7 @@ jobs:
       - name: Switch to main branch
         run: |
           git fetch origin main
-          git checkout main
+          git checkout -b update-image-digests
 
       - name: Install yq for YAML Manipulation
         run: |
@@ -118,8 +119,19 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add kubernetes/deployment.yaml
           git commit -m "Update Kubernetes manifests with image digests"
-          git push origin main
-
+          git push origin update-image-digests
+       
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-image-digests
+          base: main
+          title: "Update Kubernetes manifests with image digests"
+          body: |
+            This PR updates the Kubernetes manifests with the latest image digests.
+          labels: |
+            auto-update
 
 
 # ---------------------
