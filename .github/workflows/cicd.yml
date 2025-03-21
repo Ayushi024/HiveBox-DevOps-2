@@ -8,10 +8,7 @@ on:
     branches:
       - main
 
-# ---------------------
-# Lint and Unit Tests
-# ---------------------
-# ---------------------
+
 # Lint and Unit Tests with MinIO
 # ---------------------
 jobs:
@@ -30,8 +27,7 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-          -d
-        entrypoint: sh -c 'mkdir -p /data/test-bucket && minio server /data --console-address ":9001"'
+           entrypoint: sh -c 'mkdir -p /data/test-bucket && minio server /data --console-address ":9001"'
     
     steps:
       - name: Checkout code
