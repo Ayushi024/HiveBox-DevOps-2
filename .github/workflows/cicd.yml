@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+# ---------------------
+# Lint and Test Job
+# ---------------------
 jobs:
   lint-test:
     runs-on: ubuntu-latest
@@ -30,31 +33,25 @@ jobs:
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
+      - name: Start APIs (Run in Background)
+        run: |
+          python sensor_api/app.py --host=0.0.0.0 --port=5000 & 
+          python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 & 
+          sleep 5
+
       - name: Run unit tests
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
 
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Terrascan
-        run: |
-          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
-          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
-          install terrascan /usr/local/bin && rm terrascan
-
-      - name: Run Terrascan on Kubernetes Manifests
-        run: terrascan scan --iac-type k8s --iac-dir kubernetes/
-
+# ---------------------
+# Docker Build and Digest Generation
+# ---------------------
   docker-build:
     runs-on: ubuntu-latest
-    needs: [lint-test, security-scan]
+    needs: [lint-test]
     outputs:
-      sensor_image_digest: ${{ steps.export-digest.outputs.sensor_image_digest }}
-      versioning_image_digest: ${{ steps.export-digest.outputs.versioning_image_digest }}
+      sensor_image_digest: ${{ steps.sensor-digest.outputs.digest }}
+      versioning_image_digest: ${{ steps.versioning-digest.outputs.digest }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -62,26 +59,33 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build and push Docker images
+      - name: Build and Push Docker Images
         run: |
           SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
           VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
 
+          # Build and push images
           docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
           docker push $SENSOR_IMAGE_TAG
 
           docker build -t $VERSIONING_IMAGE_TAG -f ./basic_versioning/Dockerfile ./basic_versioning
           docker push $VERSIONING_IMAGE_TAG
 
-      - name: Get Image Digests
-        id: export-digest
+      - name: Get Sensor API Image Digest
+        id: sensor-digest
         run: |
-          SENSOR_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $SENSOR_IMAGE_TAG)
-          VERSIONING_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $VERSIONING_IMAGE_TAG)
+          SENSOR_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD))
+          echo "digest=${SENSOR_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
-          echo "sensor_image_digest=$SENSOR_DIGEST" >> $GITHUB_ENV
-          echo "versioning_image_digest=$VERSIONING_DIGEST" >> $GITHUB_ENV
+      - name: Get Basic Versioning Image Digest
+        id: versioning-digest
+        run: |
+          VERSIONING_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD))
+          echo "digest=${VERSIONING_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
+# ---------------------
+# Update Kubernetes Manifests with Digests
+# ---------------------
   update-manifests:
     runs-on: ubuntu-latest
     needs: docker-build
@@ -96,28 +100,45 @@ jobs:
 
       - name: Update Kubernetes Manifests with Digests
         run: |
-          yq eval -i '.spec.template.spec.containers[0].image = "${{ env.sensor_image_digest }}"' kubernetes/sensor_api-deployment.yaml
-          yq eval -i '.spec.template.spec.containers[0].image = "${{ env.versioning_image_digest }}"' kubernetes/versioning-deployment.yaml
+          yq e '.spec.template.spec.containers[0].image = "ghcr.io/ayushi024/hivebox-sensor-api@${{ needs.docker-build.outputs.sensor_image_digest }}"' -i kubernetes/deployment.yaml
+          yq e '.spec.template.spec.containers[0].image = "ghcr.io/ayushi024/hivebox-basic-versioning@${{ needs.docker-build.outputs.versioning_image_digest }}"' -i kubernetes/deployment.yaml
 
-      - name: Upload Updated Manifests as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: updated-manifests
-          path: kubernetes/
+      - name: Commit and Push Updated Manifests
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git commit -am "Update Kubernetes manifests with image digests"
+          git push
 
-  deploy-staging:
+# ---------------------
+# Security Scan with Terrascan
+# ---------------------
+  security-scan:
     runs-on: ubuntu-latest
     needs: update-manifests
-    environment: staging
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Updated Manifests
-        uses: actions/download-artifact@v4
-        with:
-          name: updated-manifests
-          path: kubernetes/
+      - name: Install Terrascan
+        run: |
+          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
+          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
+          install terrascan /usr/local/bin && rm terrascan
+
+      - name: Run Terrascan on Kubernetes Manifests
+        run: terrascan scan --iac-type k8s --iac-dir kubernetes/
+
+# ---------------------
+# Deploy to Staging
+# ---------------------
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: security-scan
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install KIND
         run: |
