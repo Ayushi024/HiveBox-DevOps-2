@@ -27,7 +27,7 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-        entrypoint: sh -c 'minio server /data --console-address ":9001"'
+        command: server /data --console-address ":9001"
 
     steps:
       - name: Checkout code
