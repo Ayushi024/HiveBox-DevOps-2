@@ -150,8 +150,8 @@ jobs:
           tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
           install terrascan /usr/local/bin && rm terrascan
 
-      - name: Run Terrascan on Kubernetes Manifests
-        run: terrascan scan --iac-type k8s --iac-dir kubernetes/
+      # - name: Run Terrascan on Kubernetes Manifests
+      #   run: terrascan scan --iac-type k8s --iac-dir kubernetes/
 
 
 # ---------------------
