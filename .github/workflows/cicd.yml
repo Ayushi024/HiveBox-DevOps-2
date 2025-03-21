@@ -7,10 +7,6 @@ on:
   pull_request:
     branches:
       - main
-
-# ---------------------
-# Lint and Unit Tests with MinIO
-# ---------------------
 jobs:
   lint-test:
     runs-on: ubuntu-latest
@@ -27,8 +23,9 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-        command: server /data --console-address ":9001"
-
+          --entrypoint /bin/sh
+          -c "minio server /data --console-address ':9001'"
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
