@@ -8,9 +8,7 @@ on:
     branches:
       - main
 
-# ---------------------
-# Lint and Test Job
-# ---------------------
+
 jobs:
   lint-test:
     runs-on: ubuntu-latest
