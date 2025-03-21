@@ -124,3 +124,11 @@ This document outlines the steps taken to set up Continuous Integration (CI) and
   - `/metrics` – Exposes Prometheus metrics.
   - `/version` – Returns application version.
 - **Debugged and fixed endpoint errors** during initial tests.
+
+
+
+**SonarQube**                                      
+SonarQube is an open-source platform developed by SonarSource for continuous inspection of code quality. It performs automatic reviews through static code analysis to detect bugs, vulnerabilities, and code smells across various programming languages. 
+                                                                                        
+**Terrascan**                                                     
+Terrascan is a static code analyzer developed by Tenable for Infrastructure as Code (IaC). It enables developers and DevOps teams to scan IaC templates for security vulnerabilities and compliance violations before deploying infrastructure, ensuring that cloud resources are provisioned securely.
