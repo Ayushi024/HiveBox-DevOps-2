@@ -8,7 +8,11 @@ on:
     branches:
       - main
 
+<<<<<<< HEAD
 # ---------------------
+=======
+
+>>>>>>> cae7973cafec94e19bc219cce9b44af77da53edb
 # Lint and Unit Tests with MinIO
 # ---------------------
 jobs:
@@ -27,9 +31,14 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
+<<<<<<< HEAD
           -d
         entrypoint: sh -c 'minio server /data --console-address ":9001"'
 
+=======
+           entrypoint: sh -c 'mkdir -p /data/test-bucket && minio server /data --console-address ":9001"'
+    
+>>>>>>> cae7973cafec94e19bc219cce9b44af77da53edb
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
