@@ -11,9 +11,28 @@ on:
 # ---------------------
 # Lint and Unit Tests
 # ---------------------
+# ---------------------
+# Lint and Unit Tests with MinIO
+# ---------------------
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+    services:
+      minio:
+        image: minio/minio:latest
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        options: >-
+          --name minio
+          -v /data:/data
+          -v /config:/root/.minio
+          --entrypoint sh minio/minio
+          -c 'mkdir -p /data/test-bucket && /usr/bin/minio server /data --console-address ":9001"'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,7 +47,11 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -r sensor_api/requirements.txt
           pip install -r basic_versioning/requirements.txt
-          pip install flake8 pytest redis
+          pip install flake8 pytest redis minio
+
+      - name: Check if MinIO is running
+        run: |
+          curl --retry 5 --retry-delay 3 -s http://localhost:9000/minio/health/live || exit 1
 
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
@@ -42,6 +65,7 @@ jobs:
       - name: Run unit tests
         run: |
           pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
+
 
 # ---------------------
 # Docker Build and Digest Generation
