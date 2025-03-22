@@ -23,10 +23,10 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sensor-api
-          image: ghcr.io/ayushi024/hivebox-sensor-api@<DIGEST_PLACEHOLDER> # Replace <DIGEST_PLACEHOLDER> with actual digest
+          image: ghcr.io/ayushi024/hivebox-sensor-api@<DIGEST_PLACEHOLDER>  # Replace <DIGEST_PLACEHOLDER> with actual digest
           ports:
-            - containerPort: 5000
-            - containerPort: 8000  # Metrics endpoint exposed on 8000
+            - containerPort: 5000  # Flask API
+            - containerPort: 8000  # Prometheus Metrics
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -41,6 +41,23 @@ spec:
             - name: openweather-secret-volume
               mountPath: /etc/secrets
               readOnly: true
+          env:
+            - name: VALKEY_HOST
+              value: "valkey-service"  # Valkey (Redis-Compatible) service name
+            - name: VALKEY_PORT
+              value: "6379"
+            - name: MINIO_ENDPOINT
+              value: "minio-service:9000"
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: accessKey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: secretKey
           livenessProbe:
             httpGet:
               path: /health
@@ -49,7 +66,7 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz   # Updated readiness probe to check /readyz endpoint
               port: 5000
             initialDelaySeconds: 2
             periodSeconds: 5
