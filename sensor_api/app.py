@@ -50,6 +50,7 @@ BUCKET_NAME = "sensor-data"
 if not minio_client.bucket_exists(BUCKET_NAME):
     minio_client.make_bucket(BUCKET_NAME)
 
+
 # ------------------------
 # /temperature Endpoint
 # ------------------------
@@ -155,7 +156,10 @@ def readiness_check():
         if check_senseboxes_health():
             return jsonify({"status": "OK"}), 200
         else:
-            return jsonify({"status": "Failure", "reason": "SenseBox Health Failing"}), 500
+            return (
+                jsonify({"status": "Failure", "reason": "SenseBox Health Failing"}),
+                500,
+            )
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
@@ -197,4 +201,3 @@ if __name__ == "__main__":
     start_http_server(8000)
     # Run Flask application
     app.run(host="0.0.0.0", port=5000)
-
