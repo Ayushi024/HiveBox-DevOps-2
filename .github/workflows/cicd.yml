@@ -36,7 +36,32 @@ jobs:
           pip install -r basic_versioning/requirements.txt
           pip install flake8 pytest redis minio
 
-     
+      # ---------------------
+      # Run Valkey (Redis-Compatible) in Background
+      # ---------------------
+      - name: Run Valkey in Background
+        run: |
+          echo "🚀 Starting Valkey..."
+          docker run -d --name valkey \
+            -p 6379:6379 \
+            redis:latest
+
+      - name: Wait for Valkey to be ready
+        run: |
+          echo "⏳ Waiting for Valkey to be ready..."
+          for i in {1..15}; do
+            if redis-cli ping | grep -q PONG; then
+              echo "✅ Valkey is ready!"
+              exit 0
+            fi
+            echo "⏳ Waiting for Valkey... Attempt $i/15"
+            sleep 5
+          done
+          echo "❗️ Valkey did not start in time."
+          docker logs valkey || true
+          exit 1
+
+
       - name: Run MinIO in Background
         run: |
           echo "Starting MinIO..."
