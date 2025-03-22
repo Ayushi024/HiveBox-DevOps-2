@@ -23,8 +23,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - basic_versioning
-      - minio
+      minio:
+        condition: service_healthy
+      basic_versioning:
+        condition: service_started
     networks:
       - app-network
     environment:

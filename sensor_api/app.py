@@ -12,7 +12,7 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST,
     start_http_server,
 )
-from minio import Minio
+from minio import Minio, S3Error
 
 app = Flask(__name__)
 
@@ -30,25 +30,43 @@ redis_port = int(os.getenv("VALKEY_PORT", 6379))
 CACHE_TTL = 300  # Cache expiry in 5 minutes
 
 # Initialize Redis/Valkey client
-redis_client = redis.Redis(
-    host=redis_host, port=redis_port, db=0, decode_responses=True
-)
+try:
+    redis_client = redis.Redis(
+        host=redis_host, port=redis_port, db=0, decode_responses=True
+    )
+    redis_client.ping()  # Check if Redis is running
+    app.logger.info("✅ Redis connection successful")
+except redis.ConnectionError as e:
+    app.logger.error(f"❌ Redis connection failed: {str(e)}")
+    redis_client = None
 
 # ------------------------
 # MinIO Configuration
 # ------------------------
-minio_client = Minio(
-    os.getenv("MINIO_ENDPOINT", "localhost:9000"),
-    access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-    secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
-    secure=False,
-)
+minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 
-BUCKET_NAME = "sensor-data"
+try:
+    minio_client = Minio(
+        minio_endpoint.replace("http://", ""),
+        access_key=access_key,
+        secret_key=secret_key,
+        secure=False,
+    )
 
-# Ensure MinIO bucket exists
-if not minio_client.bucket_exists(BUCKET_NAME):
-    minio_client.make_bucket(BUCKET_NAME)
+    BUCKET_NAME = "sensor-data"
+
+    # Ensure MinIO bucket exists
+    if not minio_client.bucket_exists(BUCKET_NAME):
+        minio_client.make_bucket(BUCKET_NAME)
+        app.logger.info(f"✅ MinIO bucket '{BUCKET_NAME}' created")
+    else:
+        app.logger.info(f"✅ MinIO bucket '{BUCKET_NAME}' already exists")
+
+except S3Error as e:
+    app.logger.error(f"❌ MinIO connection failed: {str(e)}")
+    minio_client = None
 
 
 # ------------------------
@@ -60,7 +78,7 @@ def get_temperature():
     REQUEST_COUNT.inc()  # Increment request count
 
     # Check if cached data is available
-    cached_data = redis_client.get("temperature_data")
+    cached_data = redis_client.get("temperature_data") if redis_client else None
     if cached_data:
         return jsonify({"source": "cache", "data": json.loads(cached_data)})
 
@@ -93,7 +111,8 @@ def get_temperature():
         temperature_data = {"temperature_celsius": temp, "status": status}
 
         # Cache the data in Valkey (Redis)
-        redis_client.setex("temperature_data", CACHE_TTL, json.dumps(temperature_data))
+        if redis_client:
+            redis_client.setex("temperature_data", CACHE_TTL, json.dumps(temperature_data))
 
         return jsonify({"source": "API", "data": temperature_data})
 
@@ -110,8 +129,11 @@ def get_temperature():
 def store_data():
     """Stores sensor data to MinIO bucket manually."""
     try:
+        if not minio_client:
+            return jsonify({"error": "MinIO is not configured correctly"}), 500
+
         # Get cached temperature data
-        redis_data = redis_client.get("temperature_data")
+        redis_data = redis_client.get("temperature_data") if redis_client else None
         if not redis_data:
             return jsonify({"error": "No data available to store"}), 500
 
@@ -147,27 +169,28 @@ def metrics():
 def readiness_check():
     """Returns 200 OK if system is healthy."""
     try:
-        # Check if cache has fresh data
-        cached_data = redis_client.get("temperature_data")
-        if not cached_data:
-            return jsonify({"status": "Failure", "reason": "Cache is empty"}), 500
+        # Check Redis connection
+        if redis_client and redis_client.ping():
+            redis_status = "OK"
+        else:
+            redis_status = "Failure"
 
-        # Check API Health
-        if check_senseboxes_health():
+        # Check MinIO bucket
+        if minio_client and minio_client.bucket_exists(BUCKET_NAME):
+            minio_status = "OK"
+        else:
+            minio_status = "Failure"
+
+        # Return combined status
+        if redis_status == "OK" and minio_status == "OK":
             return jsonify({"status": "OK"}), 200
         else:
-            return (
-                jsonify({"status": "Failure", "reason": "SenseBox Health Failing"}),
-                500,
-            )
+            return jsonify(
+                {"status": "Failure", "reason": f"Redis: {redis_status}, MinIO: {minio_status}"}
+            ), 500
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
-
-def check_senseboxes_health():
-    """Dummy function to simulate senseBox health check."""
-    return True
 
 
 # ------------------------
@@ -177,7 +200,12 @@ def store_data_periodically():
     """Stores data to MinIO every 5 minutes."""
     while True:
         try:
-            redis_data = redis_client.get("temperature_data")
+            if not minio_client:
+                app.logger.warning("MinIO not configured, skipping periodic storage")
+                time.sleep(300)
+                continue
+
+            redis_data = redis_client.get("temperature_data") if redis_client else None
             if redis_data:
                 file_name = f"data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
                 content = redis_data.encode("utf-8")
