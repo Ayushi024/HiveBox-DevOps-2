@@ -23,7 +23,7 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-        command: [ "server", "/data", "--console-address", ":9001" ]
+          --entrypoint /bin/sh -c "minio server /data --console-address ':9001'"
 
     steps:
       - name: Checkout code
