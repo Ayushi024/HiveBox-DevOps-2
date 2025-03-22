@@ -15,19 +15,20 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     services:
-      minio:
-        image: minio/minio:latest
-        ports:
-          - 9000:9000
-          - 9001:9001
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: >-
-          --name minio
-          -v /data:/data
-          -v /config:/root/.minio
-        command: server /data --console-address ":9001"
+  minio:
+    image: minio/minio:latest
+    ports:
+      - 9000:9000
+      - 9001:9001
+    env:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    options: >-
+      --name minio
+      -v /data:/data
+      -v /config:/root/.minio
+    command: [ "server", "/data", "--console-address", ":9001" ]
+
 
     steps:
       - name: Checkout code
