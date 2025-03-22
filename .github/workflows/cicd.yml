@@ -45,6 +45,10 @@ jobs:
           docker run -d --name valkey \
             -p 6379:6379 \
             redis:latest
+      
+      - name: Install Redis CLI
+        run: |
+          sudo apt-get update && sudo apt-get install -y redis-tools
 
       - name: Wait for Valkey to be ready
         run: |
