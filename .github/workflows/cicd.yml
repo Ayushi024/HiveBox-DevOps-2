@@ -14,19 +14,6 @@ on:
 jobs:
   lint-test:
     runs-on: ubuntu-latest
-    services:
-      minio:
-        image: minio/minio:latest
-        ports:
-          - 9000:9000
-          - 9001:9001
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: >-
-          --name minio
-          -v /data:/data
-          -v /config:/root/.minio
 
     steps:
       - name: Checkout code
@@ -49,6 +36,16 @@ jobs:
           pip install -r basic_versioning/requirements.txt
           pip install flake8 pytest redis minio
 
+      # ✅ Run MinIO manually
+      - name: Run MinIO in Background
+        run: |
+          echo "Starting MinIO..."
+          docker run -d --name minio \
+            -p 9000:9000 -p 9001:9001 \
+            -e "MINIO_ROOT_USER=minioadmin" \
+            -e "MINIO_ROOT_PASSWORD=minioadmin" \
+            minio/minio:latest server /data --console-address ":9001"
+
       - name: Wait for MinIO to be ready
         run: |
           echo "Waiting for MinIO to be ready..."
@@ -61,14 +58,7 @@ jobs:
             sleep 5
           done
           echo "❗️ MinIO did not start in time."
-          echo "🔎 Fetching MinIO logs for debugging..."
-          MINIO_CONTAINER=$(docker ps -q -f name=minio)
-          if [ -n "$MINIO_CONTAINER" ]; then
-            docker logs $MINIO_CONTAINER
-          else
-            echo "⚠️ No running MinIO container found. Listing all containers..."
-            docker ps -a
-          fi
+          docker logs minio || true
           exit 1
 
       - name: Verify MinIO Status Before Tests
