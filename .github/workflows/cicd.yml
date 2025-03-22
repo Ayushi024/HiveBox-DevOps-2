@@ -57,6 +57,8 @@ jobs:
             sleep 5
           done
           echo " MinIO did not start in time."
+          echo "🔎 Fetching MinIO logs for debugging..."
+          docker logs $(docker ps -q -f name=minio) || true
           exit 1
 
       - name: Configure MinIO Bucket
