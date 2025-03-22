@@ -112,7 +112,9 @@ def get_temperature():
 
         # Cache the data in Valkey (Redis)
         if redis_client:
-            redis_client.setex("temperature_data", CACHE_TTL, json.dumps(temperature_data))
+            redis_client.setex(
+                "temperature_data", CACHE_TTL, json.dumps(temperature_data)
+            )
 
         return jsonify({"source": "API", "data": temperature_data})
 
@@ -185,9 +187,15 @@ def readiness_check():
         if redis_status == "OK" and minio_status == "OK":
             return jsonify({"status": "OK"}), 200
         else:
-            return jsonify(
-                {"status": "Failure", "reason": f"Redis: {redis_status}, MinIO: {minio_status}"}
-            ), 500
+            return (
+                jsonify(
+                    {
+                        "status": "Failure",
+                        "reason": f"Redis: {redis_status}, MinIO: {minio_status}",
+                    }
+                ),
+                500,
+            )
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

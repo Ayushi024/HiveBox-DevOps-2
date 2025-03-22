@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+  # ------------------------
+  # Basic Versioning Service
+  # ------------------------
   basic_versioning:
     build: ./basic_versioning
     ports:
@@ -16,6 +19,9 @@ services:
       start_period: 10s
       timeout: 5s
 
+  # ------------------------
+  # Sensor API Service
+  # ------------------------
   sensor_api:
     build: ./sensor_api
     ports:
@@ -36,11 +42,14 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
 
+  # ------------------------
+  # MinIO Service
+  # ------------------------
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000"  # API port
+      - "9001:9001"  # Console port
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -57,6 +66,9 @@ services:
       start_period: 10s
       timeout: 5s
 
+# ------------------------
+# Networks & Volumes
+# ------------------------
 networks:
   app-network:
     driver: bridge
