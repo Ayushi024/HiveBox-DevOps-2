@@ -198,5 +198,5 @@ Thread(target=store_data_periodically, daemon=True).start()
 if __name__ == "__main__":
     # Start Prometheus metrics server on port 8000
     start_http_server(8000)
-    
+
     app.run(host="0.0.0.0", port=5000)
