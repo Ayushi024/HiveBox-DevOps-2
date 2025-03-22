@@ -20,19 +20,19 @@ class TestSensorAPI(unittest.TestCase):
 
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["status"], "Good")
+        self.assertEqual(response.json["data"]["status"], "Good")
 
         # Test with temperature 5°C - "Too Cold"
         mock_get.return_value.json.return_value = {"main": {"temp": 5}}
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["status"], "Too Cold")
+        self.assertEqual(response.json["data"]["status"], "Too Cold")
 
         # Test with temperature 40°C - "Too Hot"
         mock_get.return_value.json.return_value = {"main": {"temp": 40}}
         response = self.client.get("/temperature")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["status"], "Too Hot")
+        self.assertEqual(response.json["data"]["status"], "Too Hot")
 
     @patch("sensor_api.app.requests.get")
     def test_temperature_invalid_api_response(self, mock_get):
