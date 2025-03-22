@@ -24,11 +24,12 @@ jobs:
           MINIO_ROOT_USER: minioadmin
           MINIO_ROOT_PASSWORD: minioadmin
         options: >-
-          --health-cmd "curl -s http://localhost:9000/minio/health/live || exit 1"
+          --name minio
+          --health-cmd "curl -f http://127.0.0.1:9000/minio/health/live || exit 1"
           --health-interval 5s
           --health-retries 5
           --health-timeout 5s
-          --entrypoint "" minio/minio server /data --console-address ":9001"
+          server /data --console-address ":9001"
 
     steps:
       - name: Checkout code
@@ -49,30 +50,34 @@ jobs:
       - name: Wait for MinIO to be ready
         run: |
           echo "Waiting for MinIO to be ready..."
-          for i in {1..10}; do
-            if curl -s http://localhost:9000/minio/health/live; then
-              echo " MinIO is ready!"
+          for i in {1..15}; do
+            if curl -s http://127.0.0.1:9000/minio/health/live; then
+              echo "✅ MinIO is ready!"
               exit 0
             fi
-            echo " Waiting for MinIO... Attempt $i/10"
+            echo "⏳ Waiting for MinIO... Attempt $i/15"
             sleep 5
           done
-          echo " MinIO did not start in time."
+          echo "❌ MinIO did not start in time."
+          echo "🔎 Fetching MinIO logs for debugging..."
+          docker logs $(docker ps -q -f name=minio) || true
           exit 1
-
-      - name: Debug MinIO Logs if Failed
-        if: failure()
-        run: |
-          echo " Collecting MinIO Logs for Debugging..."
-          docker logs $(docker ps -q --filter ancestor=minio/minio) || true
 
       - name: Configure MinIO Bucket
         run: |
           curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
           chmod +x mc
           sudo mv mc /usr/local/bin/
-          mc alias set myminio http://localhost:9000 minioadmin minioadmin
-          mc mb myminio/test-bucket || true
+          
+          mc alias set myminio http://127.0.0.1:9000 minioadmin minioadmin
+          
+          # Create bucket if not exists
+          if ! mc ls myminio/test-bucket >/dev/null 2>&1; then
+            mc mb myminio/test-bucket || true
+            echo "✅ MinIO bucket 'test-bucket' created successfully!"
+          else
+            echo "✅ MinIO bucket 'test-bucket' already exists."
+          fi
 
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
@@ -108,7 +113,6 @@ jobs:
           SENSOR_IMAGE_TAG="ghcr.io/ayushi024/hivebox-sensor-api:$(git rev-parse --short HEAD)"
           VERSIONING_IMAGE_TAG="ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD)"
 
-          # Build and push images
           docker build -t $SENSOR_IMAGE_TAG -f ./sensor_api/Dockerfile ./sensor_api
           docker push $SENSOR_IMAGE_TAG
 
