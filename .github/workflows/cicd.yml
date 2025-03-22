@@ -23,7 +23,7 @@ jobs:
           --name minio
           -v /data:/data
           -v /config:/root/.minio
-          
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
