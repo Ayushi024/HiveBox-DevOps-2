@@ -1,4 +1,5 @@
 import os
+import json
 import time
 from threading import Thread
 from datetime import datetime
@@ -61,7 +62,7 @@ def get_temperature():
     # Check if cached data is available
     cached_data = redis_client.get("temperature_data")
     if cached_data:
-        return jsonify({"source": "cache", "data": eval(cached_data)})
+        return jsonify({"source": "cache", "data": json.loads(cached_data)})
 
     api_key = os.getenv("OPENWEATHER_API_KEY")
 
@@ -92,7 +93,7 @@ def get_temperature():
         temperature_data = {"temperature_celsius": temp, "status": status}
 
         # Cache the data in Valkey (Redis)
-        redis_client.setex("temperature_data", CACHE_TTL, str(temperature_data))
+        redis_client.setex("temperature_data", CACHE_TTL, json.dumps(temperature_data))
 
         return jsonify({"source": "API", "data": temperature_data})
 
@@ -116,7 +117,7 @@ def store_data():
 
         # Prepare file name and content
         file_name = f"data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-        content = str(redis_data).encode("utf-8")
+        content = redis_data.encode("utf-8")
 
         # Upload data to MinIO
         minio_client.put_object(
@@ -179,7 +180,7 @@ def store_data_periodically():
             redis_data = redis_client.get("temperature_data")
             if redis_data:
                 file_name = f"data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
-                content = str(redis_data).encode("utf-8")
+                content = redis_data.encode("utf-8")
                 minio_client.put_object(
                     BUCKET_NAME, file_name, data=content, length=len(content)
                 )
