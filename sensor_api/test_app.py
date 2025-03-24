@@ -12,7 +12,7 @@ class TestSensorAPI(unittest.TestCase):
         self.client = app.test_client()
         os.environ["OPENWEATHER_API_KEY"] = "test_api_key"
 
-        # Patch and 
+        # Patch and
         # mock REDIS_CLIENT and MINIO_CLIENT
         self.redis_patch = patch("sensor_api.app.REDIS_CLIENT", new_callable=MagicMock)
         self.minio_patch = patch("sensor_api.app.MINIO_CLIENT", new_callable=MagicMock)
@@ -96,7 +96,9 @@ class TestSensorAPI(unittest.TestCase):
 
     def test_store_manual_trigger(self):
         """Test /store endpoint to trigger manual storage to MinIO."""
-        self.mock_redis.get.return_value = '{"temperature_celsius": 20, "status": "Good"}'
+        self.mock_redis.get.return_value = (
+            '{"temperature_celsius": 20, "status": "Good"}'
+        )
         self.mock_minio.put_object.return_value = None
 
         response = self.client.post("/store")
@@ -105,7 +107,9 @@ class TestSensorAPI(unittest.TestCase):
 
     def test_store_failure(self):
         """Test /store endpoint handling storage error."""
-        self.mock_redis.get.return_value = '{"temperature_celsius": 20, "status": "Good"}'
+        self.mock_redis.get.return_value = (
+            '{"temperature_celsius": 20, "status": "Good"}'
+        )
         self.mock_minio.put_object.side_effect = Exception("Storage error")
 
         response = self.client.post("/store")
