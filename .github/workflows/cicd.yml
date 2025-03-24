@@ -37,17 +37,16 @@ jobs:
           pip install flake8 pytest redis minio
       
 
-            - name: Debug Environment Variables
+      - name: Debug Environment Variables
         env:
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: |
           if [ -z "$OPENWEATHER_API_KEY" ]; then
-            echo "❗️ OPENWEATHER_API_KEY is not set or is empty!"
+            echo " OPENWEATHER_API_KEY is not set or is empty!"
             exit 1
           else
-            echo "✅ OPENWEATHER_API_KEY is set successfully!"
+            echo " OPENWEATHER_API_KEY is set successfully!"
           fi
-
       # ---------------------
       # Run Valkey (Redis-Compatible) in Background
       # ---------------------
