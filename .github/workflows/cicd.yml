@@ -123,15 +123,12 @@ jobs:
       # Start APIs and Capture Logs
       # ---------------------
      
-       - name: Start APIs with Debug Mode
+      - name: Start APIs with Debug Mode
         run: |
           python sensor_api/app.py --host=0.0.0.0 --port=5000 > api.log 2>&1 &
           python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 > versioning.log 2>&1 &
           sleep 5
-
-      
-      
-
+          
       # ---------------------
       # Run Unit Tests
       # ---------------------
