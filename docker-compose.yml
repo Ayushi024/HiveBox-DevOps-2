@@ -41,6 +41,12 @@ services:
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/readyz"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
 
   # ------------------------
   # MinIO Service

@@ -37,36 +37,42 @@ try:
     redis_client.ping()  # Check if Redis is running
     app.logger.info("✅ Redis connection successful")
 except redis.ConnectionError as e:
-    app.logger.error(f"❌ Redis connection failed: {str(e)}")
+    app.logger.error("❌ Redis connection failed: %s", str(e))
     redis_client = None
 
 # ------------------------
 # MinIO Configuration
 # ------------------------
-minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+
+minio_endpoint = os.getenv(
+    "MINIO_ENDPOINT", "localhost:9000"
+)  # For Docker use 'minio:9000'
 access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
 secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 
+# Remove http:// or https:// if exists
+minio_host = minio_endpoint.replace("http://", "").replace("https://", "")
+
 try:
-    minio_client = Minio(
-        minio_endpoint.replace("http://", ""),
+    MINIO_CLIENT = Minio(
+        minio_host,
         access_key=access_key,
         secret_key=secret_key,
         secure=False,
     )
 
-    BUCKET_NAME = "sensor-data"
+    BUCKET_NAME: str = "sensor-data"
 
     # Ensure MinIO bucket exists
-    if not minio_client.bucket_exists(BUCKET_NAME):
-        minio_client.make_bucket(BUCKET_NAME)
-        app.logger.info(f"✅ MinIO bucket '{BUCKET_NAME}' created")
+    if not MINIO_CLIENT.bucket_exists(BUCKET_NAME):
+        MINIO_CLIENT.make_bucket(BUCKET_NAME)
+        app.logger.info("✅ MinIO bucket '%s' created", BUCKET_NAME)
     else:
-        app.logger.info(f"✅ MinIO bucket '{BUCKET_NAME}' already exists")
+        app.logger.info("✅ MinIO bucket '%s' already exists", BUCKET_NAME)
 
 except S3Error as e:
-    app.logger.error(f"❌ MinIO connection failed: {str(e)}")
-    minio_client = None
+    app.logger.error("❌ MinIO connection failed: %s", str(e))
+    MINIO_CLIENT = None
 
 
 # ------------------------
@@ -131,7 +137,7 @@ def get_temperature():
 def store_data():
     """Stores sensor data to MinIO bucket manually."""
     try:
-        if not minio_client:
+        if not MINIO_CLIENT:
             return jsonify({"error": "MinIO is not configured correctly"}), 500
 
         # Get cached temperature data
@@ -144,7 +150,7 @@ def store_data():
         content = redis_data.encode("utf-8")
 
         # Upload data to MinIO
-        minio_client.put_object(
+        MINIO_CLIENT.put_object(
             BUCKET_NAME, file_name, data=content, length=len(content)
         )
 
@@ -178,7 +184,7 @@ def readiness_check():
             redis_status = "Failure"
 
         # Check MinIO bucket
-        if minio_client and minio_client.bucket_exists(BUCKET_NAME):
+        if MINIO_CLIENT and MINIO_CLIENT.bucket_exists(BUCKET_NAME):
             minio_status = "OK"
         else:
             minio_status = "Failure"
@@ -208,7 +214,7 @@ def store_data_periodically():
     """Stores data to MinIO every 5 minutes."""
     while True:
         try:
-            if not minio_client:
+            if not MINIO_CLIENT:
                 app.logger.warning("MinIO not configured, skipping periodic storage")
                 time.sleep(300)
                 continue
@@ -217,7 +223,7 @@ def store_data_periodically():
             if redis_data:
                 file_name = f"data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
                 content = redis_data.encode("utf-8")
-                minio_client.put_object(
+                MINIO_CLIENT.put_object(
                     BUCKET_NAME, file_name, data=content, length=len(content)
                 )
                 app.logger.info("Stored data periodically: %s", file_name)
