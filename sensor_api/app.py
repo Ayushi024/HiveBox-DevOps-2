@@ -12,7 +12,7 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST,
     start_http_server,
 )
-from minio import Minio, S3Error
+from minio import Minio
 
 app = Flask(__name__)
 
