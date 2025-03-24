@@ -35,7 +35,7 @@ try:
         host=redis_host, port=redis_port, db=0, decode_responses=True
     )
     REDIS_CLIENT.ping()  # Check if Redis is running
-    app.logger.info("✅ Redis connection successful")
+    app.logger.info("✅ Redis/Valkey connection successful")
 except redis.ConnectionError as e:
     app.logger.error("❌ Redis connection failed: %s", str(e))
     REDIS_CLIENT = None
@@ -82,12 +82,14 @@ def get_temperature():
     # Check if cached data is available
     cached_data = REDIS_CLIENT.get("temperature_data") if REDIS_CLIENT else None
     if cached_data:
+        app.logger.info("✅ Using cached temperature data.")
         return jsonify({"source": "cache", "data": json.loads(cached_data)})
 
     api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not api_key:
         ERROR_COUNT.inc()
+        app.logger.error("❌ API key is missing. Please set the API key.")
         return jsonify({"error": "API key missing"}), 500
 
     try:
@@ -99,12 +101,14 @@ def get_temperature():
 
         if response.status_code != 200:
             ERROR_COUNT.inc()
+            app.logger.error(f"❌ Failed to fetch data. Status code: {response.status_code}")
             return jsonify({"error": "Failed to fetch data"}), 500
 
         data = response.json()
 
         if "main" not in data or "temp" not in data["main"]:
             ERROR_COUNT.inc()
+            app.logger.error("❌ Invalid API response: %s", data)
             return jsonify({"error": "Invalid API response"}), 500
 
         temp = data["main"]["temp"]
@@ -117,11 +121,12 @@ def get_temperature():
             REDIS_CLIENT.setex(
                 "temperature_data", CACHE_TTL, json.dumps(temperature_data)
             )
+            app.logger.info("✅ Temperature data cached successfully.")
 
         return jsonify({"source": "API", "data": temperature_data})
 
     except Exception as e:
-        app.logger.error("Error fetching data: %s", e)
+        app.logger.error("❌ Error fetching data: %s", e)
         ERROR_COUNT.inc()
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
@@ -134,11 +139,13 @@ def store_data():
     """Stores sensor data to MinIO bucket manually."""
     try:
         if not MINIO_CLIENT:
+            app.logger.error("❌ MinIO is not configured correctly.")
             return jsonify({"error": "MinIO is not configured correctly"}), 500
 
         # Get cached temperature data
         redis_data = REDIS_CLIENT.get("temperature_data") if REDIS_CLIENT else None
         if not redis_data:
+            app.logger.warning("❗️ No data available to store in MinIO.")
             return jsonify({"error": "No data available to store"}), 500
 
         # Prepare file name and content
@@ -149,11 +156,12 @@ def store_data():
         MINIO_CLIENT.put_object(
             BUCKET_NAME, file_name, data=content, length=len(content)
         )
+        app.logger.info("✅ Data stored successfully in MinIO: %s", file_name)
 
         return jsonify({"message": "Data stored successfully", "file": file_name})
 
     except Exception as e:
-        app.logger.error("Error storing data: %s", e)
+        app.logger.error("❌ Error storing data: %s", e)
         return jsonify({"error": f"Failed to store data: {str(e)}"}), 500
 
 
@@ -219,7 +227,7 @@ def store_data_periodically():
     while True:
         try:
             if not MINIO_CLIENT:
-                app.logger.warning("MinIO not configured, skipping periodic storage")
+                app.logger.warning("⚠️ MinIO not configured, skipping periodic storage")
                 time.sleep(300)
                 continue
 
@@ -230,9 +238,9 @@ def store_data_periodically():
                 MINIO_CLIENT.put_object(
                     BUCKET_NAME, file_name, data=content, length=len(content)
                 )
-                app.logger.info("Stored data periodically: %s", file_name)
+                app.logger.info("✅ Periodic data stored in MinIO: %s", file_name)
         except Exception as e:
-            app.logger.error("Error in periodic data storage: %s", e)
+            app.logger.error("❌ Error in periodic data storage: %s", e)
 
         time.sleep(300)  # Sleep for 5 minutes
 
@@ -246,4 +254,5 @@ if __name__ == "__main__":
     # Start Prometheus metrics server on port 8000
     start_http_server(8000)
 
+    # Run Flask application on port 5000
     app.run(host="0.0.0.0", port=5000)
