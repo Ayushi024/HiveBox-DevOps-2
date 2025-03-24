@@ -21,7 +21,7 @@ jobs:
 
       - name: List Running Containers for Debugging
         run: |
-          echo "🔍 Checking running Docker containers..."
+          echo " Checking running Docker containers..."
           docker ps -a
 
       - name: Set up Python
@@ -39,13 +39,14 @@ jobs:
       # ---------------------
       # Run Valkey (Redis-Compatible) in Background
       # ---------------------
-      - name: Run Valkey in Background
+           
+      - name: Run Redis in Background
         run: |
-          echo "🚀 Starting Valkey..."
-          docker run -d --name valkey \
+          echo "🚀 Starting Redis..."
+          docker run -d --name redis \
             -p 6379:6379 \
             redis:latest
-      
+
       - name: Install Redis CLI
         run: |
           sudo apt-get update && sudo apt-get install -y redis-tools

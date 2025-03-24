@@ -200,8 +200,15 @@ def readiness_check():
             )
 
     except Exception as e:
-        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
+        return (
+            jsonify(
+                {
+                    "status": "Failure",
+                    "reason": f"Unexpected error: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 # ------------------------
 # Periodic Data Storage to MinIO
