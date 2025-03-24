@@ -31,26 +31,22 @@ CACHE_TTL = 300  # Cache expiry in 5 minutes
 
 # Initialize Redis/Valkey client
 try:
-    redis_client = redis.Redis(
+    REDIS_CLIENT = redis.Redis(
         host=redis_host, port=redis_port, db=0, decode_responses=True
     )
-    redis_client.ping()  # Check if Redis is running
+    REDIS_CLIENT.ping()  # Check if Redis is running
     app.logger.info("✅ Redis connection successful")
 except redis.ConnectionError as e:
     app.logger.error("❌ Redis connection failed: %s", str(e))
-    redis_client = None
+    REDIS_CLIENT = None
 
 # ------------------------
 # MinIO Configuration
 # ------------------------
-
-minio_endpoint = os.getenv(
-    "MINIO_ENDPOINT", "localhost:9000"
-)  # For Docker use 'minio:9000'
+minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
 access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
 secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 
-# Remove http:// or https:// if exists
 minio_host = minio_endpoint.replace("http://", "").replace("https://", "")
 
 try:
@@ -61,7 +57,7 @@ try:
         secure=False,
     )
 
-    BUCKET_NAME: str = "sensor-data"
+    BUCKET_NAME = "sensor-data"
 
     # Ensure MinIO bucket exists
     if not MINIO_CLIENT.bucket_exists(BUCKET_NAME):
@@ -70,7 +66,7 @@ try:
     else:
         app.logger.info("✅ MinIO bucket '%s' already exists", BUCKET_NAME)
 
-except S3Error as e:
+except Exception as e:
     app.logger.error("❌ MinIO connection failed: %s", str(e))
     MINIO_CLIENT = None
 
@@ -84,7 +80,7 @@ def get_temperature():
     REQUEST_COUNT.inc()  # Increment request count
 
     # Check if cached data is available
-    cached_data = redis_client.get("temperature_data") if redis_client else None
+    cached_data = REDIS_CLIENT.get("temperature_data") if REDIS_CLIENT else None
     if cached_data:
         return jsonify({"source": "cache", "data": json.loads(cached_data)})
 
@@ -116,9 +112,9 @@ def get_temperature():
 
         temperature_data = {"temperature_celsius": temp, "status": status}
 
-        # Cache the data in Valkey (Redis)
-        if redis_client:
-            redis_client.setex(
+        # Cache the data in Redis/Valkey
+        if REDIS_CLIENT:
+            REDIS_CLIENT.setex(
                 "temperature_data", CACHE_TTL, json.dumps(temperature_data)
             )
 
@@ -141,7 +137,7 @@ def store_data():
             return jsonify({"error": "MinIO is not configured correctly"}), 500
 
         # Get cached temperature data
-        redis_data = redis_client.get("temperature_data") if redis_client else None
+        redis_data = REDIS_CLIENT.get("temperature_data") if REDIS_CLIENT else None
         if not redis_data:
             return jsonify({"error": "No data available to store"}), 500
 
@@ -175,23 +171,23 @@ def metrics():
 # ------------------------
 @app.route("/readyz", methods=["GET"])
 def readiness_check():
-    """Returns 200 OK if system is healthy."""
+    """Returns 200 ready if system is healthy."""
     try:
         # Check Redis connection
-        if redis_client and redis_client.ping():
-            redis_status = "OK"
+        if REDIS_CLIENT and REDIS_CLIENT.ping():
+            redis_status = "ready"
         else:
             redis_status = "Failure"
 
         # Check MinIO bucket
         if MINIO_CLIENT and MINIO_CLIENT.bucket_exists(BUCKET_NAME):
-            minio_status = "OK"
+            minio_status = "ready"
         else:
             minio_status = "Failure"
 
         # Return combined status
-        if redis_status == "OK" and minio_status == "OK":
-            return jsonify({"status": "OK"}), 200
+        if redis_status == "ready" and minio_status == "ready":
+            return jsonify({"status": "ready"}), 200
         else:
             return (
                 jsonify(
@@ -219,7 +215,7 @@ def store_data_periodically():
                 time.sleep(300)
                 continue
 
-            redis_data = redis_client.get("temperature_data") if redis_client else None
+            redis_data = REDIS_CLIENT.get("temperature_data") if REDIS_CLIENT else None
             if redis_data:
                 file_name = f"data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
                 content = redis_data.encode("utf-8")
