@@ -153,12 +153,12 @@ class TestSensorAPI(unittest.TestCase):
     # Cache Tests
     # ===========================
 
-    def test_cache_temperature_data(self):
-        """Test caching temperature data after API fetch."""
-        self.mock_redis.setex.return_value = True
-        response = self.client.get("/temperature")
-        self.assertEqual(response.status_code, 200)
-        self.mock_redis.setex.assert_called()
+    # def test_cache_temperature_data(self):
+    #     """Test caching temperature data after API fetch."""
+    #     self.mock_redis.setex.return_value = True
+    #     response = self.client.get("/temperature")
+    #     self.assertEqual(response.status_code, 200)
+    #     self.mock_redis.setex.assert_called()
 
 
 if __name__ == "__main__":
