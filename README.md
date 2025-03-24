@@ -140,7 +140,7 @@ This document outlines the steps taken to set up Continuous Integration (CI) and
 -Implemented fallback to API fetch if cache misses.                                           
 -Improved response time by serving cached data efficiently.                                           
 
-
+----------------------------------------------------------------------------------------------------------------------------
 **SonarQube**                                      
 SonarQube is an open-source platform developed by SonarSource for continuous inspection of code quality. It performs automatic reviews through static code analysis to detect bugs, vulnerabilities, and code smells across various programming languages. 
                                                                                         
