@@ -127,7 +127,9 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json["message"], "Data stored successfully")
 
-    @patch("sensor_api.app.minio_client.put_object", side_effect=Exception("Storage error"))
+    @patch(
+        "sensor_api.app.minio_client.put_object", side_effect=Exception("Storage error")
+    )
     def test_store_failure(self, mock_put_object):
         """Test /store endpoint handling storage error."""
         response = self.client.post("/store")
@@ -148,7 +150,10 @@ class TestSensorAPI(unittest.TestCase):
         self.assertEqual(response.json["error"], "MinIO connection error")
 
     @patch("sensor_api.app.minio_client.bucket_exists", return_value=False)
-    @patch("sensor_api.app.minio_client.make_bucket", side_effect=Exception("Bucket creation failed"))
+    @patch(
+        "sensor_api.app.minio_client.make_bucket",
+        side_effect=Exception("Bucket creation failed"),
+    )
     def test_minio_bucket_creation_failure(self, mock_make_bucket, mock_bucket_exists):
         """Test failure when MinIO bucket creation fails."""
         response = self.client.get("/temperature")
