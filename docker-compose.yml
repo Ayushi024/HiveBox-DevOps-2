@@ -1,6 +1,9 @@
 version: '3.8'
 
 services:
+  # ------------------------
+  # Basic Versioning Service
+  # ------------------------
   basic_versioning:
     build: ./basic_versioning
     ports:
@@ -16,6 +19,9 @@ services:
       start_period: 10s
       timeout: 5s
 
+  # ------------------------
+  # Sensor API Service
+  # ------------------------
   sensor_api:
     build: ./sensor_api
     ports:
@@ -23,13 +29,56 @@ services:
     env_file:
       - .env
     depends_on:
-      - basic_versioning
+      minio:
+        condition: service_healthy
+      basic_versioning:
+        condition: service_started
     networks:
       - app-network
     environment:
       - VERSION_BASE_URL=http://basic_versioning:5001
       - TEMPERATURE_BASE_URL=http://sensor_api:5000
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/readyz"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
 
+  # ------------------------
+  # MinIO Service
+  # ------------------------
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"  # API port
+      - "9001:9001"  # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+      - minio_config:/root/.minio
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+# ------------------------
+# Networks & Volumes
+# ------------------------
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  minio_data:
+  minio_config:
