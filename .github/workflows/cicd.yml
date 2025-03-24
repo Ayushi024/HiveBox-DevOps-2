@@ -51,16 +51,30 @@ jobs:
       # ---------------------
       # Run Valkey (Redis-Compatible) in Background
       # ---------------------
-      - name: Run Redis in Background
+      - name: Run valkey in Background
         run: |
-          echo "🚀 Starting Redis..."
-          docker run -d --name redis \
+          echo "🚀 Starting valkey..."
+          docker run -d --name valkey \
             -p 6379:6379 \
-            redis:latest
+            valkey/valkey:latest
 
       - name: Install Redis CLI
         run: |
           sudo apt-get update && sudo apt-get install -y redis-tools
+      - name: Wait for Valkey to be ready
+        run: |
+          echo "⏳ Waiting for Valkey to be ready..."
+          for i in {1..15}; do
+            if redis-cli ping | grep -q PONG; then
+              echo "✅ Valkey is ready!"
+              exit 0
+            fi
+            echo "⏳ Waiting for Valkey... Attempt $i/15"
+            sleep 5
+           done
+           echo "❗️ Valkey did not start in time."
+          docker logs valkey || true
+          exit 1
 
       - name: Wait for Redis to be ready
         run: |
