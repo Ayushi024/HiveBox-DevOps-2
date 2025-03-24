@@ -42,15 +42,15 @@ jobs:
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: |
           if [ -z "$OPENWEATHER_API_KEY" ]; then
-            echo " OPENWEATHER_API_KEY is not set or is empty!"
+            echo "❗️ OPENWEATHER_API_KEY is not set or is empty!"
             exit 1
           else
-            echo " OPENWEATHER_API_KEY is set successfully!"
+            echo "✅ OPENWEATHER_API_KEY is set successfully!"
           fi
+
       # ---------------------
       # Run Valkey (Redis-Compatible) in Background
       # ---------------------
-           
       - name: Run Redis in Background
         run: |
           echo "🚀 Starting Redis..."
@@ -62,25 +62,27 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y redis-tools
 
-      - name: Wait for Valkey to be ready
+      - name: Wait for Redis to be ready
         run: |
-          echo "⏳ Waiting for Valkey to be ready..."
+          echo "⏳ Waiting for Redis to be ready..."
           for i in {1..15}; do
             if redis-cli ping | grep -q PONG; then
-              echo "✅ Valkey is ready!"
+              echo "✅ Redis is ready!"
               exit 0
             fi
-            echo "⏳ Waiting for Valkey... Attempt $i/15"
+            echo "⏳ Waiting for Redis... Attempt $i/15"
             sleep 5
           done
-          echo "❗️ Valkey did not start in time."
-          docker logs valkey || true
+          echo "❗️ Redis did not start in time."
+          docker logs redis || true
           exit 1
 
-
+      # ---------------------
+      # Run MinIO in Background
+      # ---------------------
       - name: Run MinIO in Background
         run: |
-          echo "Starting MinIO..."
+          echo "🚀 Starting MinIO..."
           docker run -d --name minio \
             -p 9000:9000 -p 9001:9001 \
             -e "MINIO_ROOT_USER=minioadmin" \
@@ -89,7 +91,7 @@ jobs:
 
       - name: Wait for MinIO to be ready
         run: |
-          echo "Waiting for MinIO to be ready..."
+          echo "⏳ Waiting for MinIO to be ready..."
           for i in {1..15}; do
             if curl -s http://localhost:9000/minio/health/live; then
               echo "✅ MinIO is ready!"
@@ -102,10 +104,6 @@ jobs:
           docker logs minio || true
           exit 1
 
-      - name: Verify MinIO Status Before Tests
-        run: |
-          curl -s http://localhost:9000/minio/health/live || echo "⚠️ MinIO is not accessible yet!"
-
       - name: Configure MinIO Bucket
         run: |
           curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
@@ -114,19 +112,27 @@ jobs:
           mc alias set myminio http://localhost:9000 minioadmin minioadmin
           mc mb myminio/test-bucket || true
 
+      # ---------------------
+      # Lint Code with Flake8
+      # ---------------------
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
-      - name: Start APIs (Run in Background)
-        run: |
-          python sensor_api/app.py --host=0.0.0.0 --port=5000 &
-          python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 &
-          sleep 5
-            - name: Run APIs with Debug Mode
+      # ---------------------
+      # Start APIs and Capture Logs
+      # ---------------------
+      - name: Start APIs with Debug Mode
         run: |
           python sensor_api/app.py --host=0.0.0.0 --port=5000 > api.log 2>&1 &
           python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 > versioning.log 2>&1 &
           sleep 5
+
+      # ---------------------
+      # Run Unit Tests
+      # ---------------------
+      - name: Run unit tests
+        run: |
+          pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
 
       - name: Debug API Logs if Tests Fail
         if: failure()
@@ -135,22 +141,6 @@ jobs:
           cat api.log || echo "⚠️ No logs found for sensor_api!"
           echo "🔎 Showing API logs for basic_versioning:"
           cat versioning.log || echo "⚠️ No logs found for basic_versioning!"
-
-      - name: Run unit tests
-        run: |
-          pytest sensor_api/test_app.py basic_versioning/test_version.py --maxfail=5 --disable-warnings -q
-
-      - name: Debug MinIO Logs if Startup Fails
-        if: failure()
-        run: |
-          MINIO_CONTAINER=$(docker ps -q -f name=minio)
-          if [ -n "$MINIO_CONTAINER" ]; then
-            echo "🔎 Fetching MinIO logs..."
-            docker logs $MINIO_CONTAINER
-          else
-            echo "⚠️ No running MinIO container found. Listing all containers..."
-            docker ps -a
-          fi
 
 # ---------------------
 # Docker Build and Digest Generation
@@ -192,7 +182,6 @@ jobs:
           VERSIONING_IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ayushi024/hivebox-basic-versioning:$(git rev-parse --short HEAD))
           echo "digest=${VERSIONING_IMAGE_DIGEST#*@}" >> $GITHUB_OUTPUT
 
-
 # ---------------------
 # Update Kubernetes Manifests with Digests
 # ---------------------
@@ -200,14 +189,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build
     permissions:
-      contents: write  # <-- Add this permission
+      contents: write
       pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch entire history to allow pushing changes
+          fetch-depth: 0
 
       - name: Switch to main branch
         run: |
@@ -231,7 +220,7 @@ jobs:
           git add kubernetes/deployment.yaml
           git commit -m "Update Kubernetes manifests with image digests"
           git push origin update-image-digests
-       
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -244,9 +233,8 @@ jobs:
           labels: |
             auto-update
 
-
 # ---------------------
-# Security Scan with Terrascan (Run BEFORE update-manifests)
+# Security Scan with Terrascan
 # ---------------------
   security-scan:
     runs-on: ubuntu-latest
@@ -261,9 +249,8 @@ jobs:
           tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
           install terrascan /usr/local/bin && rm terrascan
 
-      # - name: Run Terrascan on Kubernetes Manifests
-      #   run: terrascan scan --iac-type k8s --iac-dir kubernetes/
-
+      - name: Run Terrascan on Kubernetes Manifests
+        run: terrascan scan --iac-type k8s --iac-dir kubernetes/
 
 # ---------------------
 # Deploy to Staging
