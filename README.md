@@ -126,9 +126,29 @@ This document outlines the steps taken to set up Continuous Integration (CI) and
 - **Debugged and fixed endpoint errors** during initial tests.
 
 
+## 9. MinIO Integration for Object Storage                  
+-Configured MinIO as an S3-compatible storage solution.                                         
+-Created the sensor-data bucket during application startup.                                           
+-Implemented /store endpoint to:                                           
+-Manually store temperature data to MinIO.                                           
+-Automatically store data every 5 minutes using a background thread.                                           
+-Verified MinIO data uploads and confirmed file integrity.
+                                           
+## 10. Valkey (Redis-Compatible) Caching Integration                                           
+-Configured Valkey (a Redis-compatible caching layer).                                           
+-Cached API responses for /temperature endpoint with a TTL of 5 minutes.                                           
+-Implemented fallback to API fetch if cache misses.                                           
+-Improved response time by serving cached data efficiently.                                           
+
 
 **SonarQube**                                      
 SonarQube is an open-source platform developed by SonarSource for continuous inspection of code quality. It performs automatic reviews through static code analysis to detect bugs, vulnerabilities, and code smells across various programming languages. 
                                                                                         
 **Terrascan**                                                     
 Terrascan is a static code analyzer developed by Tenable for Infrastructure as Code (IaC). It enables developers and DevOps teams to scan IaC templates for security vulnerabilities and compliance violations before deploying infrastructure, ensuring that cloud resources are provisioned securely.
+
+**Valkey**
+Valkey is an open-source, Redis-compatible in-memory data store used primarily for caching and real-time data processing. It provides ultra-fast data retrieval and supports key-value storage, making it highly efficient for applications that require low-latency data access.
+
+**MiniIO**
+MinIO is a high-performance, S3-compatible object storage system designed for storing unstructured data such as images, videos, and backups. It is lightweight, scalable, and suitable for cloud-native applications. MinIO provides APIs compatible with Amazon S3, allowing applications to use familiar commands to manage and retrieve data.
