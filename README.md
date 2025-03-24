@@ -147,8 +147,8 @@ SonarQube is an open-source platform developed by SonarSource for continuous ins
 **Terrascan**                                                     
 Terrascan is a static code analyzer developed by Tenable for Infrastructure as Code (IaC). It enables developers and DevOps teams to scan IaC templates for security vulnerabilities and compliance violations before deploying infrastructure, ensuring that cloud resources are provisioned securely.
 
-**Valkey**
+**Valkey**                                    
 Valkey is an open-source, Redis-compatible in-memory data store used primarily for caching and real-time data processing. It provides ultra-fast data retrieval and supports key-value storage, making it highly efficient for applications that require low-latency data access.
-
-**MiniIO**
+                           
+**MiniIO**                                          
 MinIO is a high-performance, S3-compatible object storage system designed for storing unstructured data such as images, videos, and backups. It is lightweight, scalable, and suitable for cloud-native applications. MinIO provides APIs compatible with Amazon S3, allowing applications to use familiar commands to manage and retrieve data.
