@@ -118,14 +118,19 @@ jobs:
       - name: Lint with flake8
         run: flake8 sensor_api basic_versioning --max-line-length=100
 
+
       # ---------------------
       # Start APIs and Capture Logs
       # ---------------------
-      - name: Start APIs with Debug Mode
+     
+       - name: Start APIs with Debug Mode
         run: |
           python sensor_api/app.py --host=0.0.0.0 --port=5000 > api.log 2>&1 &
           python basic_versioning/app_version.py --host=0.0.0.0 --port=5001 > versioning.log 2>&1 &
           sleep 5
+
+      
+      
 
       # ---------------------
       # Run Unit Tests
